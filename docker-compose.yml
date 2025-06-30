@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   api:
     image: busybox
@@ -15,6 +13,15 @@ services:
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev
       POSTGRES_DB: ticket_system
+    # Пробрасываем порт, чтобы host→psql работал
+    ports:
+      - "5434:5432"
+    # Опциональный healthcheck, чтобы ждать готовности БД
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U dev -d ticket_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - db-data:/var/lib/postgresql/data
 
