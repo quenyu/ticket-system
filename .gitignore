@@ -1,0 +1,16 @@
+# Go
+/bin/
+/build/
+*.exe
+*.test
+*.out
+
+# Dependency directories
+vendor/
+
+# IDE
+.idea/
+.vscode/
+
+# Migration logs
+migrations/*.log 
