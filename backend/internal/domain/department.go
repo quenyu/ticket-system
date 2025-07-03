@@ -1,6 +1,6 @@
 package domain
 
 type Department struct {
-	ID   int16
-	Name string
+	ID   int16  `gorm:"column:department_id;primaryKey"`
+	Name string `gorm:"column:name"`
 }
