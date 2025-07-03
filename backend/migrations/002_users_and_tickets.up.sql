@@ -11,7 +11,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE tickets (
-    ticket_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    ticket_id UUID NOT NULL DEFAULT uuid_generate_v4(),
     title TEXT NOT NULL,
     description TEXT,
     status_id SMALLINT NOT NULL REFERENCES ticket_statuses(status_id),
@@ -21,5 +21,6 @@ CREATE TABLE tickets (
     department_id SMALLINT NOT NULL REFERENCES departments(department_id),
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    deleted_at TIMESTAMPTZ
-) PARTITION BY RANGE (created_at); 
+    deleted_at TIMESTAMPTZ,
+    PRIMARY KEY (ticket_id, created_at)
+) PARTITION BY RANGE (created_at);
