@@ -17,11 +17,6 @@ type AuthService struct {
 	JWTSecret string
 }
 
-type UserRepository interface {
-	FindByUsername(username string) (*domain.User, error)
-	Create(user *domain.User) error
-}
-
 func NewAuthService(userRepo UserRepository, jwtSecret string) *AuthService {
 	return &AuthService{UserRepo: userRepo, JWTSecret: jwtSecret}
 }
