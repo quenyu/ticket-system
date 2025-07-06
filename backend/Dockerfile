@@ -6,6 +6,7 @@ RUN cd cmd/api && go build -o /app/api
 
 FROM alpine:3.18
 WORKDIR /app
+RUN apk add --no-cache bash
 COPY --from=builder /app/api ./api
 EXPOSE 8080
 CMD ["./api"] 

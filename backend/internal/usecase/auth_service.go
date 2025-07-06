@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"errors"
+	"log"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -27,6 +28,7 @@ func (s *AuthService) Login(username, password string) (model.LoginResponse, err
 		return model.LoginResponse{}, errors.New("invalid credentials")
 	}
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password)); err != nil {
+		log.Printf("bcrypt error: %v, hash: %s, password: %s", err, user.PasswordHash, password)
 		return model.LoginResponse{}, errors.New("invalid credentials")
 	}
 	token, err := s.generateJWT(user)
