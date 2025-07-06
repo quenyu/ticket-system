@@ -16,7 +16,6 @@ vendor/
 migrations/*.log
 
 # Frontend build and CMake
-./frontend/build
 frontend/CMakeFiles/
 frontend/CMakeCache.txt
 frontend/Makefile
