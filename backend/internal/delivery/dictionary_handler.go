@@ -26,7 +26,8 @@ func (h *DictionaryHandler) DepartmentsList(c *gin.Context) {
 	items, err := h.Departments.List()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
-			Error: model.APIErrorDetail{Code: 500, Message: err.Error()},
+			Code:    "500",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -37,7 +38,8 @@ func (h *DictionaryHandler) TicketStatusesList(c *gin.Context) {
 	items, err := h.TicketStatuses.List()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
-			Error: model.APIErrorDetail{Code: 500, Message: err.Error()},
+			Code:    "500",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -48,7 +50,8 @@ func (h *DictionaryHandler) TicketPrioritiesList(c *gin.Context) {
 	items, err := h.TicketPriorities.List()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
-			Error: model.APIErrorDetail{Code: 500, Message: err.Error()},
+			Code:    "500",
+			Message: err.Error(),
 		})
 		return
 	}

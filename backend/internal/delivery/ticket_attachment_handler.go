@@ -23,14 +23,16 @@ func (h *TicketAttachmentHandler) GetAttachments(c *gin.Context) {
 	ticketID, err := uuid.Parse(ticketIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.APIError{
-			Error: model.APIErrorDetail{Code: 400, Message: "Invalid ticket id"},
+			Code:    "400",
+			Message: "Invalid ticket id",
 		})
 		return
 	}
 	atts, err := h.Repo.GetByTicketID(ticketID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
-			Error: model.APIErrorDetail{Code: 500, Message: err.Error()},
+			Code:    "500",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -42,21 +44,25 @@ func (h *TicketAttachmentHandler) AddAttachment(c *gin.Context) {
 	ticketID, err := uuid.Parse(ticketIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.APIError{
-			Error: model.APIErrorDetail{Code: 400, Message: "Invalid ticket id"},
+			Code:    "400",
+			Message: "Invalid ticket id",
 		})
 		return
 	}
 	var att domain.TicketAttachment
 	if err := c.ShouldBindJSON(&att); err != nil {
 		c.JSON(http.StatusBadRequest, model.APIError{
-			Error: model.APIErrorDetail{Code: 400, Message: "Validation failed", Details: err.Error()},
+			Code:    "400",
+			Message: "Validation failed",
+			Details: err.Error(),
 		})
 		return
 	}
 	att.TicketID = ticketID
 	if err := h.Repo.Create(&att); err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
-			Error: model.APIErrorDetail{Code: 500, Message: err.Error()},
+			Code:    "500",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -68,14 +74,16 @@ func (h *TicketAttachmentHandler) GetAttachmentByID(c *gin.Context) {
 	attID, err := uuid.Parse(attIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.APIError{
-			Error: model.APIErrorDetail{Code: 400, Message: "Invalid attachment id"},
+			Code:    "400",
+			Message: "Invalid attachment id",
 		})
 		return
 	}
 	att, err := h.Repo.GetByID(attID)
 	if err != nil {
 		c.JSON(http.StatusNotFound, model.APIError{
-			Error: model.APIErrorDetail{Code: 404, Message: err.Error()},
+			Code:    "404",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -87,13 +95,15 @@ func (h *TicketAttachmentHandler) DeleteAttachment(c *gin.Context) {
 	attID, err := uuid.Parse(attIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.APIError{
-			Error: model.APIErrorDetail{Code: 400, Message: "Invalid attachment id"},
+			Code:    "400",
+			Message: "Invalid attachment id",
 		})
 		return
 	}
 	if err := h.Repo.Delete(attID); err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
-			Error: model.APIErrorDetail{Code: 500, Message: err.Error()},
+			Code:    "500",
+			Message: err.Error(),
 		})
 		return
 	}

@@ -22,14 +22,16 @@ func (h *TicketHistoryHandler) GetHistory(c *gin.Context) {
 	ticketID, err := uuid.Parse(ticketIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.APIError{
-			Error: model.APIErrorDetail{Code: 400, Message: "Invalid ticket id"},
+			Code:    "400",
+			Message: "Invalid ticket id",
 		})
 		return
 	}
 	history, err := h.Repo.GetByTicketID(ticketID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
-			Error: model.APIErrorDetail{Code: 500, Message: err.Error()},
+			Code:    "500",
+			Message: err.Error(),
 		})
 		return
 	}

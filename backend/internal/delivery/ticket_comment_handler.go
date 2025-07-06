@@ -23,14 +23,16 @@ func (h *TicketCommentHandler) GetComments(c *gin.Context) {
 	ticketID, err := uuid.Parse(ticketIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.APIError{
-			Error: model.APIErrorDetail{Code: 400, Message: "Invalid ticket id"},
+			Code:    "400",
+			Message: "Invalid ticket id",
 		})
 		return
 	}
 	comments, err := h.Repo.GetByTicketID(ticketID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
-			Error: model.APIErrorDetail{Code: 500, Message: err.Error()},
+			Code:    "500",
+			Message: err.Error(),
 		})
 		return
 	}
@@ -42,21 +44,25 @@ func (h *TicketCommentHandler) AddComment(c *gin.Context) {
 	ticketID, err := uuid.Parse(ticketIDStr)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, model.APIError{
-			Error: model.APIErrorDetail{Code: 400, Message: "Invalid ticket id"},
+			Code:    "400",
+			Message: "Invalid ticket id",
 		})
 		return
 	}
 	var comment domain.TicketComment
 	if err := c.ShouldBindJSON(&comment); err != nil {
 		c.JSON(http.StatusBadRequest, model.APIError{
-			Error: model.APIErrorDetail{Code: 400, Message: "Validation failed", Details: err.Error()},
+			Code:    "400",
+			Message: "Validation failed",
+			Details: err.Error(),
 		})
 		return
 	}
 	comment.TicketID = ticketID
 	if err := h.Repo.Create(&comment); err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
-			Error: model.APIErrorDetail{Code: 500, Message: err.Error()},
+			Code:    "500",
+			Message: err.Error(),
 		})
 		return
 	}
