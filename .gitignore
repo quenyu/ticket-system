@@ -13,4 +13,52 @@ vendor/
 .vscode/
 
 # Migration logs
-migrations/*.log 
+migrations/*.log
+
+# Frontend build and CMake
+./frontend/build
+frontend/CMakeFiles/
+frontend/CMakeCache.txt
+frontend/Makefile
+frontend/cmake_install.cmake
+frontend/ticket_frontend_autogen/
+frontend/ticket_frontend.dir/
+frontend/ticket_frontend_autogen.dir/
+frontend/Makefile2
+frontend/Makefile.cmake
+frontend/progress.marks
+frontend/TargetDirectories.txt
+frontend/pkgRedirects/
+frontend/CMakeScratch/
+frontend/CMakeRuleHashes.txt
+frontend/CMakeDirectoryInformation.cmake
+frontend/CMakeConfigureLog.yaml
+frontend/progress.make
+frontend/build.make
+frontend/objects.a
+frontend/objects1.rsp
+frontend/link.txt
+frontend/linkLibs.rsp
+frontend/includes_CXX.rsp
+frontend/flags.make
+frontend/depend.make
+frontend/DependInfo.cmake
+frontend/compiler_depend.*
+frontend/*.obj
+frontend/*.obj.d
+frontend/*.rsp
+
+# Docker
+pgdata/
+
+# Test and temp files
+*.sql
+*.json
+*.go~
+*.tmp
+*.bak
+*.swp
+
+# System
+.DS_Store
+Thumbs.db 
