@@ -20,6 +20,9 @@
 #include <QTimer>
 #include "../config.h"
 #include "../network/api_client.h"
+#include <QHeaderView>
+#include <QStandardItemModel>
+#include <QDateTime>
 
 TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QWidget *parent, Mode mode)
     : QDialog(parent), m_ticket(ticket), m_jwtToken(jwtToken), m_mode(mode) {
@@ -32,7 +35,7 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         qDebug() << "Setting window title...";
         setWindowTitle(mode == Create ? "Create Ticket" : "Edit Ticket");
         qDebug() << "Setting fixed size...";
-        setFixedSize(500, 420);
+        setFixedSize(700, 500);
         
         qDebug() << "Creating main layout...";
         QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -40,52 +43,89 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         qDebug() << "Creating title label...";
         auto *titleLbl = new QLabel(mode == Create ? "<b>Create New Ticket</b>" : "<b>Edit Ticket</b>", this);
         titleLbl->setAlignment(Qt::AlignHCenter);
-        mainLayout->addWidget(titleLbl);
         
         qDebug() << "Creating title edit...";
         titleEdit = new QLineEdit(ticket.title, this);
         titleEdit->setPlaceholderText("Title");
-        mainLayout->addWidget(titleEdit);
         
         qDebug() << "Creating description edit...";
         descEdit = new QTextEdit("", this);
         descEdit->setPlaceholderText("Description");
         descEdit->setMinimumHeight(80);
         descEdit->setMaximumHeight(160);
-        mainLayout->addWidget(descEdit);
+        if (mode == Edit)
+            descEdit->setText(ticket.description);
         
         qDebug() << "Creating department combo...";
         departmentCombo = new QComboBox(this);
         departmentCombo->addItem("Loading departments...", -1);
-        mainLayout->addWidget(new QLabel("Department", this));
-        mainLayout->addWidget(departmentCombo);
         
         qDebug() << "Creating status combo...";
         statusCombo = new QComboBox(this);
         statusCombo->addItem("Loading statuses...", -1);
-        mainLayout->addWidget(new QLabel("Status", this));
-        mainLayout->addWidget(statusCombo);
         
         qDebug() << "Creating priority combo...";
         priorityCombo = new QComboBox(this);
         priorityCombo->addItem("Loading priorities...", -1);
-        mainLayout->addWidget(new QLabel("Priority", this));
-        mainLayout->addWidget(priorityCombo);
         
         qDebug() << "Creating assignee combo...";
         assigneeCombo = new QComboBox(this);
         assigneeCombo->addItem("Loading assignees...", "");
-        mainLayout->addWidget(new QLabel("Assignee", this));
-        mainLayout->addWidget(assigneeCombo);
         
-        qDebug() << "Creating save button...";
-        saveButton = new QPushButton(mode == Create ? "Create" : "Save", this);
-        saveButton->setEnabled(true);
-        mainLayout->addWidget(saveButton);
+        qDebug() << "Creating tab widget...";
+        QTabWidget *tabWidget = new QTabWidget(this);
+        tabs = tabWidget;
+        
+        // Overview tab
+        overviewTab = new QWidget(this);
+        QVBoxLayout *overviewLayout = new QVBoxLayout(overviewTab);
+        overviewLayout->addWidget(titleLbl);
+        overviewLayout->addWidget(titleEdit);
+        overviewLayout->addWidget(descEdit);
+        overviewLayout->addWidget(new QLabel("Department", this));
+        overviewLayout->addWidget(departmentCombo);
+        overviewLayout->addWidget(new QLabel("Status", this));
+        overviewLayout->addWidget(statusCombo);
+        overviewLayout->addWidget(new QLabel("Priority", this));
+        overviewLayout->addWidget(priorityCombo);
+        overviewLayout->addWidget(new QLabel("Assignee", this));
+        overviewLayout->addWidget(assigneeCombo);
+        
+        QHBoxLayout *overviewBtnLayout = new QHBoxLayout();
+        overviewCancelBtn = new QPushButton("Cancel", overviewTab);
+        overviewSaveBtn = new QPushButton(mode == Create ? "Create" : "Save", overviewTab);
+        overviewBtnLayout->addStretch();
+        overviewBtnLayout->addWidget(overviewCancelBtn);
+        overviewBtnLayout->addWidget(overviewSaveBtn);
+        overviewLayout->addLayout(overviewBtnLayout);
+        tabWidget->addTab(overviewTab, "Overview");
+        
+        // History tab
+        historyTab = new QWidget(this);
+        QVBoxLayout *historyLayout = new QVBoxLayout(historyTab);
+        historyView = new QTableView(historyTab);
+        historyView->setSelectionBehavior(QAbstractItemView::SelectRows);
+        historyView->setSelectionMode(QAbstractItemView::SingleSelection);
+        historyView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        historyView->horizontalHeader()->setStretchLastSection(true);
+        historyView->setAlternatingRowColors(true);
+        historyLayout->addWidget(historyView, 1);
+        QHBoxLayout *historyBtnLayout = new QHBoxLayout();
+        QPushButton *cancelBtn = new QPushButton("Cancel", historyTab);
+        QPushButton *saveBtn = new QPushButton("Save", historyTab);
+        historyBtnLayout->addStretch();
+        historyBtnLayout->addWidget(cancelBtn);
+        historyBtnLayout->addWidget(saveBtn);
+        historyLayout->addLayout(historyBtnLayout);
+        tabWidget->addTab(historyTab, "History");
+        
+        mainLayout->addWidget(tabWidget);
         
         qDebug() << "Connecting signals...";
-        connect(saveButton, &QPushButton::clicked, this, &TicketDialog::onSaveClicked);
-        connect(titleEdit, &QLineEdit::returnPressed, this, &TicketDialog::onSaveClicked);
+        connect(cancelBtn, &QPushButton::clicked, this, &QDialog::reject);
+        connect(saveBtn, &QPushButton::clicked, this, &TicketDialog::onSaveClicked);
+        connect(overviewCancelBtn, &QPushButton::clicked, this, &QDialog::reject);
+        connect(overviewSaveBtn, &QPushButton::clicked, this, &TicketDialog::onSaveClicked);
         
         qDebug() << "Creating network manager...";
         network = new QNetworkAccessManager(this);
@@ -106,6 +146,10 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         });
         QTimer::singleShot(220, this, [this]{ loadUsers(); });
         
+        if (mode == Edit && !ticket.id.isEmpty()) {
+            loadHistory();
+        }
+        
         qDebug() << "=== TicketDialog constructor SUCCESS ===";
     } catch (const std::exception& e) {
         qDebug() << "EXCEPTION in TicketDialog constructor:" << e.what();
@@ -124,7 +168,7 @@ void TicketDialog::loadDepartments() {
         qDebug() << "ERROR: Network manager is null!";
         departmentCombo->clear();
         departmentCombo->addItem("Network manager not initialized", -1);
-        saveButton->setEnabled(false);
+        overviewSaveBtn->setEnabled(false);
         return;
     }
     
@@ -147,7 +191,7 @@ void TicketDialog::loadDepartments() {
             qDebug() << "EXCEPTION during network->get():" << e.what();
             departmentCombo->clear();
             departmentCombo->addItem("Network exception", -1);
-            saveButton->setEnabled(false);
+            overviewSaveBtn->setEnabled(false);
             return;
         }
         
@@ -157,7 +201,7 @@ void TicketDialog::loadDepartments() {
             qDebug() << "ERROR: reply is null!";
             departmentCombo->clear();
             departmentCombo->addItem("Network error", -1);
-            saveButton->setEnabled(false);
+            overviewSaveBtn->setEnabled(false);
             return;
         }
         
@@ -173,12 +217,12 @@ void TicketDialog::loadDepartments() {
                     qDebug() << "ERROR: Invalid JSON in department response";
                     departmentCombo->clear();
                     departmentCombo->addItem("Invalid JSON response", -1);
-                    saveButton->setEnabled(false);
+                    overviewSaveBtn->setEnabled(false);
                 } else if (!doc.isArray()) {
                     qDebug() << "ERROR: Department response is not an array";
                     departmentCombo->clear();
                     departmentCombo->addItem("Invalid response format", -1);
-                    saveButton->setEnabled(false);
+                    overviewSaveBtn->setEnabled(false);
                 } else {
                     QJsonArray arr = doc.array();
                     qDebug() << "Department array size:" << arr.size();
@@ -236,12 +280,12 @@ void TicketDialog::loadDepartments() {
         qDebug() << "EXCEPTION in loadDepartments:" << e.what();
         departmentCombo->clear();
         departmentCombo->addItem("Exception occurred", -1);
-        saveButton->setEnabled(false);
+        overviewSaveBtn->setEnabled(false);
     } catch (...) {
         qDebug() << "UNKNOWN EXCEPTION in loadDepartments";
         departmentCombo->clear();
         departmentCombo->addItem("Unknown error", -1);
-        saveButton->setEnabled(false);
+        overviewSaveBtn->setEnabled(false);
     }
 }
 
@@ -382,9 +426,9 @@ void TicketDialog::loadUsers() {
             }
             if (!users.isEmpty()) {
                 assigneeCombo->setCurrentIndex(0);
-                saveButton->setEnabled(true);
+                overviewSaveBtn->setEnabled(true);
             } else {
-                saveButton->setEnabled(false);
+                overviewSaveBtn->setEnabled(false);
             }
         } else {
             assigneeCombo->clear();
@@ -408,14 +452,14 @@ void TicketDialog::filterAssigneesByDepartment(int departmentId) {
         const auto &user = users[0];
         assigneeCombo->addItem(user.username, user.userId);
         assigneeCombo->setCurrentIndex(0);
-        saveButton->setEnabled(true);
+        overviewSaveBtn->setEnabled(true);
     } else if (validIndexes.isEmpty()) {
         assigneeCombo->addItem("No assignees for department", "");
         assigneeCombo->setCurrentIndex(0);
-        saveButton->setEnabled(false);
+        overviewSaveBtn->setEnabled(false);
     } else {
         assigneeCombo->setCurrentIndex(0);
-        saveButton->setEnabled(true);
+        overviewSaveBtn->setEnabled(true);
     }
 }
 
@@ -473,11 +517,64 @@ void TicketDialog::onSaveClicked() {
     connect(api, &APIClient::apiError, this, [this](const QString &err){
         QMessageBox::warning(this, "Error", err);
     });
-    api->createTicket(m_jwtToken, obj);
+    if (m_mode == Edit && !m_ticket.id.isEmpty()) {
+        api->updateTicket(m_jwtToken, m_ticket.id, obj);
+    } else {
+        api->createTicket(m_jwtToken, obj);
+    }
 }
 
 void TicketDialog::setCurrentTab(int index) {
     if (tabs && index >= 0 && index < tabs->count()) {
         tabs->setCurrentIndex(index);
     }
+}
+
+void TicketDialog::loadHistory() {
+    if (!network || m_ticket.id.isEmpty()) return;
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + m_ticket.id + "/history");
+    qDebug() << "Requesting history for ticket:" << m_ticket.id << "with token:" << m_jwtToken;
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
+    QNetworkReply *reply = network->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        QStandardItemModel *model = new QStandardItemModel(historyView);
+        model->setHorizontalHeaderLabels({"Date", "User", "Action"});
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray data = reply->readAll();
+            QJsonDocument doc = QJsonDocument::fromJson(data);
+            if (doc.isArray()) {
+                QJsonArray arr = doc.array();
+                for (const QJsonValue &v : arr) {
+                    if (!v.isObject()) continue;
+                    QJsonObject o = v.toObject();
+                    QString dateIso = o.value("changed_at").toString();
+                    QDateTime dt = QDateTime::fromString(dateIso, Qt::ISODate);
+                    QString date = dt.isValid() ? dt.toString("dd.MM.yyyy") : dateIso;
+                    QString userId = o.value("changed_by").toString();
+                    QString user = userId;
+                    for (const auto &u : users) {
+                        if (u.userId == userId) {
+                            user = u.username;
+                            break;
+                        }
+                    }
+                    QString action = o.value("field_name").toString() + ": " +
+                                     o.value("old_value").toString() + " → " +
+                                     o.value("new_value").toString();
+                    QList<QStandardItem*> row;
+                    row << new QStandardItem(date)
+                        << new QStandardItem(user)
+                        << new QStandardItem(action);
+                    model->appendRow(row);
+                }
+            }
+        } else {
+            qDebug() << "History request error:" << reply->errorString();
+        }
+        historyView->setModel(model);
+        historyView->resizeColumnsToContents();
+        reply->deleteLater();
+    });
 } 
