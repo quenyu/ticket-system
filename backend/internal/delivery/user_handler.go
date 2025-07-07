@@ -24,8 +24,9 @@ func (h *UserHandler) ListUsers(c *gin.Context) {
 	var result []gin.H
 	for _, u := range users {
 		result = append(result, gin.H{
-			"id":       u.ID.String(),
-			"username": u.Username,
+			"id":            u.ID.String(),
+			"username":      u.Username,
+			"department_id": u.DepartmentID,
 		})
 	}
 	c.JSON(http.StatusOK, result)
