@@ -9,7 +9,11 @@ Config& Config::instance() {
 }
 
 Config::Config() {
-    // Загружаем настройки из переменных окружения или файла конфигурации
+    // Load settings from environment variables or config file
+    // First, try environment variable
+    // Then, try config file
+    // Remove trailing slash if present
+    // Save to config file
     m_apiVersion = "v1";
     
     // Сначала пробуем переменную окружения
