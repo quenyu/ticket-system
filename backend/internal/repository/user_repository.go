@@ -25,3 +25,11 @@ func (r *UserRepository) FindByUsername(username string) (*domain.User, error) {
 func (r *UserRepository) Create(user *domain.User) error {
 	return r.DB.Create(user).Error
 }
+
+func (r *UserRepository) List() ([]*domain.User, error) {
+	var users []*domain.User
+	if err := r.DB.Where("deleted_at IS NULL").Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}

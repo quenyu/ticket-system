@@ -24,3 +24,10 @@ CREATE TABLE tickets (
     deleted_at TIMESTAMPTZ,
     PRIMARY KEY (ticket_id, created_at)
 ) PARTITION BY RANGE (created_at);
+
+CREATE TABLE tickets_2024 PARTITION OF tickets
+    FOR VALUES FROM ('2024-01-01') TO ('2025-01-01');
+CREATE TABLE tickets_2025 PARTITION OF tickets
+    FOR VALUES FROM ('2025-01-01') TO ('2026-01-01');
+CREATE TABLE tickets_2026 PARTITION OF tickets
+    FOR VALUES FROM ('2026-01-01') TO ('2027-01-01');
