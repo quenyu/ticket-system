@@ -19,6 +19,7 @@
 #include <QDebug>
 #include <QTimer>
 #include "../config.h"
+#include "../network/api_client.h"
 
 TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QWidget *parent, Mode mode)
     : QDialog(parent), m_ticket(ticket), m_jwtToken(jwtToken), m_mode(mode) {
@@ -31,7 +32,7 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         qDebug() << "Setting window title...";
         setWindowTitle(mode == Create ? "Create Ticket" : "Edit Ticket");
         qDebug() << "Setting fixed size...";
-        setFixedSize(400, 300);
+        setFixedSize(500, 420);
         
         qDebug() << "Creating main layout...";
         QVBoxLayout *mainLayout = new QVBoxLayout(this);
@@ -49,7 +50,8 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         qDebug() << "Creating description edit...";
         descEdit = new QTextEdit("", this);
         descEdit->setPlaceholderText("Description");
-        descEdit->setMaximumHeight(100);
+        descEdit->setMinimumHeight(80);
+        descEdit->setMaximumHeight(160);
         mainLayout->addWidget(descEdit);
         
         qDebug() << "Creating department combo...";
@@ -70,9 +72,15 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         mainLayout->addWidget(new QLabel("Priority", this));
         mainLayout->addWidget(priorityCombo);
         
+        qDebug() << "Creating assignee combo...";
+        assigneeCombo = new QComboBox(this);
+        assigneeCombo->addItem("Loading assignees...", "");
+        mainLayout->addWidget(new QLabel("Assignee", this));
+        mainLayout->addWidget(assigneeCombo);
+        
         qDebug() << "Creating save button...";
         saveButton = new QPushButton(mode == Create ? "Create" : "Save", this);
-        saveButton->setEnabled(false);
+        saveButton->setEnabled(true);
         mainLayout->addWidget(saveButton);
         
         qDebug() << "Connecting signals...";
@@ -85,12 +93,18 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         qDebug() << "Setting focus...";
         titleEdit->setFocus();
         
-        // Отложенная загрузка департаментов
+        // Deferred loading of departments
         QTimer::singleShot(200, this, &TicketDialog::loadDepartments);
-        // Отложенная загрузка статусов
+        // Deferred loading of statuses
         QTimer::singleShot(150, this, [this]{ loadStatuses(); });
-        // Отложенная загрузка приоритетов
+        // Deferred loading of priorities
         QTimer::singleShot(180, this, [this]{ loadPriorities(); });
+        
+        connect(departmentCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]{
+            int deptId = departmentCombo->currentData().toInt();
+            filterAssigneesByDepartment(deptId);
+        });
+        QTimer::singleShot(220, this, [this]{ loadUsers(); });
         
         qDebug() << "=== TicketDialog constructor SUCCESS ===";
     } catch (const std::exception& e) {
@@ -329,12 +343,88 @@ void TicketDialog::loadPriorities() {
     qDebug() << "=== loadPriorities() END ===";
 }
 
+void TicketDialog::loadUsers() {
+    if (!network) return;
+    QNetworkRequest req(QUrl(Config::instance().fullApiUrl() + "/users"));
+    QNetworkReply *reply = network->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray data = reply->readAll();
+            QJsonDocument doc = QJsonDocument::fromJson(data);
+            if (doc.isNull() || !doc.isArray()) {
+                assigneeCombo->clear();
+                assigneeCombo->addItem("Invalid user response", "");
+                return;
+            }
+            QJsonArray arr = doc.array();
+            users.clear();
+            assigneeCombo->clear();
+            for (const QJsonValue &v : arr) {
+                if (!v.isObject()) continue;
+                QJsonObject o = v.toObject();
+                QString userId = o.value("user_id").toString();
+                if (userId.isEmpty()) userId = o.value("id").toString();
+                QString username = o.value("username").toString();
+                int deptId = o.value("department_id").toInt(-1);
+                if (!userId.isEmpty() && !username.isEmpty() && deptId > 0) {
+                    users.append({username, userId, deptId});
+                }
+            }
+            qDebug() << "Loaded users:";
+            for (const auto &u : users) {
+                qDebug() << u.username << u.userId << u.departmentId;
+            }
+            if (users.isEmpty())
+                assigneeCombo->addItem("No users available", "");
+            // Show all users, no filtering
+            for (const auto &user : users) {
+                assigneeCombo->addItem(user.username, user.userId);
+            }
+            if (!users.isEmpty()) {
+                assigneeCombo->setCurrentIndex(0);
+                saveButton->setEnabled(true);
+            } else {
+                saveButton->setEnabled(false);
+            }
+        } else {
+            assigneeCombo->clear();
+            assigneeCombo->addItem("Failed to load users", "");
+        }
+        reply->deleteLater();
+    });
+}
+
+void TicketDialog::filterAssigneesByDepartment(int departmentId) {
+    assigneeCombo->clear();
+    QVector<int> validIndexes;
+    for (int i = 0; i < users.size(); ++i) {
+        const auto &user = users[i];
+        if (departmentId <= 0 || user.departmentId == departmentId) {
+            assigneeCombo->addItem(user.username, user.userId);
+            validIndexes.append(i);
+        }
+    }
+    if (validIndexes.isEmpty() && !users.isEmpty()) {
+        const auto &user = users[0];
+        assigneeCombo->addItem(user.username, user.userId);
+        assigneeCombo->setCurrentIndex(0);
+        saveButton->setEnabled(true);
+    } else if (validIndexes.isEmpty()) {
+        assigneeCombo->addItem("No assignees for department", "");
+        assigneeCombo->setCurrentIndex(0);
+        saveButton->setEnabled(false);
+    } else {
+        assigneeCombo->setCurrentIndex(0);
+        saveButton->setEnabled(true);
+    }
+}
+
 void TicketDialog::onSaveClicked() {
     qDebug() << "=== onSaveClicked() START ===";
     
-    // Валидация
+    // Validation
     if (titleEdit->text().trimmed().isEmpty()) {
-        QMessageBox::warning(this, "Ошибка", "Заголовок не может быть пустым");
+        QMessageBox::warning(this, "Error", "Title cannot be empty");
         titleEdit->setFocus();
         return;
     }
@@ -344,7 +434,17 @@ void TicketDialog::onSaveClicked() {
     int priorityId = priorityCombo->currentData().toInt();
     
     if (deptId <= 0 || statusId <= 0 || priorityId <= 0) {
-        QMessageBox::warning(this, "Ошибка", "Пожалуйста, выберите все обязательные поля");
+        QMessageBox::warning(this, "Error", "Please select all required fields");
+        return;
+    }
+    
+    QString assigneeId = assigneeCombo->currentData().toString();
+    qDebug() << "Assignee combo count:" << assigneeCombo->count();
+    qDebug() << "Current index:" << assigneeCombo->currentIndex();
+    qDebug() << "Current text:" << assigneeCombo->currentText();
+    qDebug() << "Current data:" << assigneeId;
+    if (assigneeId.isEmpty()) {
+        QMessageBox::warning(this, "Error", "No available assignees");
         return;
     }
     
@@ -353,68 +453,27 @@ void TicketDialog::onSaveClicked() {
     qDebug() << "Status ID:" << statusId;
     qDebug() << "Priority ID:" << priorityId;
     
-    // Формируем JSON
+    // Form JSON
     QJsonObject obj;
     obj["title"] = titleEdit->text().trimmed();
     obj["description"] = descEdit->toPlainText().trimmed();
     obj["department_id"] = deptId;
     obj["status_id"] = statusId;
     obj["priority_id"] = priorityId;
+    obj["assignee_id"] = assigneeId;
     
     qDebug() << "JSON object created:" << QJsonDocument(obj).toJson();
     
-    // Отправляем запрос
-    QNetworkRequest req;
-    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    req.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
-    
-    QNetworkReply *reply = nullptr;
-    
-    if (m_mode == Create) {
-        req.setUrl(QUrl(Config::instance().fullApiUrl() + "/tickets"));
-        reply = network->post(req, QJsonDocument(obj).toJson());
-        qDebug() << "Sending POST request to create ticket";
-    } else {
-        req.setUrl(QUrl(Config::instance().fullApiUrl() + "/tickets/" + m_ticket.id));
-        reply = network->sendCustomRequest(req, "PATCH", QJsonDocument(obj).toJson());
-        qDebug() << "Sending PATCH request to update ticket";
-    }
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() { onReplyFinished(reply); });
-}
-
-void TicketDialog::onReplyFinished(QNetworkReply* reply) {
-    if (reply->error() == QNetworkReply::NoError) {
-        QByteArray data = reply->readAll();
-        QJsonDocument doc = QJsonDocument::fromJson(data);
-        
-        // Проверяем валидность ответа
-        if (doc.isNull()) {
-            QMessageBox::warning(this, "API Error", "Получен невалидный JSON ответ");
-            reply->deleteLater();
-            return;
-        }
-        
+    // Use APIClient to create ticket
+    APIClient *api = new APIClient(this);
+    connect(api, &APIClient::ticketCreated, this, [this](const QByteArray &data){
         emit ticketSaved();
         accept();
-    } else {
-        QByteArray data = reply->readAll();
-        QJsonDocument doc = QJsonDocument::fromJson(data);
-        QString msg = reply->errorString();
-        
-        // Пытаемся извлечь сообщение об ошибке из JSON
-        if (!doc.isNull() && doc.isObject()) {
-            QJsonObject obj = doc.object();
-            if (obj.contains("error") && obj["error"].isObject()) {
-                QJsonObject errorObj = obj["error"].toObject();
-                if (errorObj.contains("message")) {
-                    msg = errorObj["message"].toString();
-                }
-            }
-        }
-        
-        QMessageBox::warning(this, "API Error", msg);
-    }
-    reply->deleteLater();
+    });
+    connect(api, &APIClient::apiError, this, [this](const QString &err){
+        QMessageBox::warning(this, "Error", err);
+    });
+    api->createTicket(m_jwtToken, obj);
 }
 
 void TicketDialog::setCurrentTab(int index) {

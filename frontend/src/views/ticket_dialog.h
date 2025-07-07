@@ -12,6 +12,12 @@ class QLineEdit;
 class QTextEdit;
 class QTableView;
 
+struct UserInfo {
+    QString username;
+    QString userId;
+    int departmentId;
+};
+
 class TicketDialog : public QDialog {
     Q_OBJECT
 public:
@@ -22,7 +28,6 @@ signals:
     void ticketSaved();
 private slots:
     void onSaveClicked();
-    void onReplyFinished(QNetworkReply* reply);
 private:
     TicketItem m_ticket;
     QString m_jwtToken;
@@ -35,7 +40,7 @@ private:
     // Overview fields
     QLineEdit *titleEdit;
     QTextEdit *descEdit;
-    // History, Comments, Attachments: QTableView или QListView
+    // History, Comments, Attachments: QTableView or QListView
     QTableView *historyView;
     QTableView *commentsView;
     QTableView *attachmentsView;
@@ -44,10 +49,14 @@ private:
     QComboBox *departmentCombo;
     QComboBox *statusCombo;
     QComboBox *priorityCombo;
+    QComboBox *assigneeCombo;
+    QVector<UserInfo> users;
     void loadHistory();
     void loadComments();
     void loadAttachments();
     void loadDepartments();
     void loadStatuses();
     void loadPriorities();
+    void loadUsers();
+    void filterAssigneesByDepartment(int departmentId);
 }; 
