@@ -5,16 +5,28 @@
 #include <QDateTime>
 #include <QStyledItemDelegate>
 #include <QJsonArray>
+#include <QJsonObject>
+#include <QMap>
 
 struct TicketItem {
     QString id;
     QString title;
+    QString description;
     QString status;
+    int statusId = -1;
     QString priority;
+    int priorityId = -1;
     QString department;
+    int departmentId = -1;
     QString assignee;
+    QString assigneeId;
+    QString creatorId;
     QDateTime createdAt;
     QDateTime updatedAt;
+    QJsonObject toJson() const;
+    static QMap<int, QString> statusLabels;
+    static QMap<int, QString> priorityLabels;
+    static QMap<int, QString> departmentNames;
 };
 
 class TicketModel : public QAbstractTableModel {

@@ -16,7 +16,7 @@ int TicketModel::rowCount(const QModelIndex &parent) const {
 
 int TicketModel::columnCount(const QModelIndex &parent) const {
     if (parent.isValid()) return 0;
-    return 8; // ID, Title, Status, Priority, Department, Assignee, Created At, Updated At
+    return 9; // ID, Title, Description, Status, Priority, Department, Assignee, Created At, Updated At
 }
 
 QVariant TicketModel::data(const QModelIndex &index, int role) const {
@@ -26,12 +26,13 @@ QVariant TicketModel::data(const QModelIndex &index, int role) const {
         switch (index.column()) {
         case 0: return t.id;
         case 1: return t.title;
-        case 2: return t.status;
-        case 3: return t.priority;
-        case 4: return t.department;
-        case 5: return t.assignee;
-        case 6: return t.createdAt.toString(Qt::ISODate);
-        case 7: return t.updatedAt.toString(Qt::ISODate);
+        case 2: return t.description;
+        case 3: return t.status;
+        case 4: return t.priority;
+        case 5: return t.department;
+        case 6: return t.assignee;
+        case 7: return t.createdAt.toString("dd:MM:yyyy");
+        case 8: return t.updatedAt.toString("dd:MM:yyyy");
         }
     }
     if (role == Qt::UserRole) {
@@ -45,12 +46,13 @@ QVariant TicketModel::headerData(int section, Qt::Orientation orientation, int r
         switch (section) {
         case 0: return "ID";
         case 1: return "Title";
-        case 2: return "Status";
-        case 3: return "Priority";
-        case 4: return "Department";
-        case 5: return "Assignee";
-        case 6: return "Created At";
-        case 7: return "Updated At";
+        case 2: return "Description";
+        case 3: return "Status";
+        case 4: return "Priority";
+        case 5: return "Department";
+        case 6: return "Assignee";
+        case 7: return "Created At";
+        case 8: return "Updated At";
         }
     }
     return QVariant();
@@ -97,6 +99,10 @@ QSize TicketBadgeDelegate::sizeHint(const QStyleOptionViewItem &option, const QM
     return sz;
 }
 
+QMap<int, QString> TicketItem::statusLabels;
+QMap<int, QString> TicketItem::priorityLabels;
+QMap<int, QString> TicketItem::departmentNames;
+
 void TicketModel::loadTickets(const QJsonArray& array) {
     QVector<TicketItem> tickets;
     for (const QJsonValue& val : array) {
@@ -105,10 +111,16 @@ void TicketModel::loadTickets(const QJsonArray& array) {
         TicketItem t;
         t.id = obj.value("ticket_id").toString();
         t.title = obj.value("title").toString();
-        t.status = obj.value("status_label").toString();
-        t.priority = obj.value("priority_label").toString();
-        t.department = obj.value("department_name").toString();
+        t.description = obj.value("description").toString();
+        t.statusId = obj.value("status_id").toInt(-1);
+        t.status = TicketItem::statusLabels.value(t.statusId, QString::number(t.statusId));
+        t.priorityId = obj.value("priority_id").toInt(-1);
+        t.priority = TicketItem::priorityLabels.value(t.priorityId, QString::number(t.priorityId));
+        t.departmentId = obj.value("department_id").toInt(-1);
+        t.department = TicketItem::departmentNames.value(t.departmentId, QString::number(t.departmentId));
         t.assignee = obj.value("assignee_name").toString();
+        t.assigneeId = obj.value("assignee_id").toString();
+        t.creatorId = obj.value("creator_id").toString();
         t.createdAt = QDateTime::fromString(obj.value("created_at").toString(), Qt::ISODate);
         t.updatedAt = QDateTime::fromString(obj.value("updated_at").toString(), Qt::ISODate);
         tickets.append(t);
@@ -119,4 +131,17 @@ void TicketModel::loadTickets(const QJsonArray& array) {
 TicketItem TicketModel::getTicket(int row) const {
     if (row < 0 || row >= m_tickets.size()) return TicketItem{};
     return m_tickets[row];
+}
+
+QJsonObject TicketItem::toJson() const {
+    QJsonObject obj;
+    if (!id.isEmpty()) obj["ticket_id"] = id;
+    obj["title"] = title;
+    obj["description"] = description;
+    obj["status_id"] = statusId;
+    obj["priority_id"] = priorityId;
+    obj["department_id"] = departmentId;
+    obj["assignee_id"] = assigneeId;
+    obj["creator_id"] = creatorId;
+    return obj;
 } 
