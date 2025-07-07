@@ -9,6 +9,7 @@ import (
 	"ticket-system/backend/internal/model"
 	"ticket-system/backend/internal/repository"
 	"ticket-system/backend/internal/usecase"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -21,6 +22,7 @@ type TicketHandler struct {
 	PriorityRepo   usecase.TicketPriorityRepository
 	DepartmentRepo usecase.DepartmentRepository
 	UserRepo       *repository.UserRepository
+	HistoryRepo    *repository.TicketHistoryRepository
 }
 
 type TicketFilter struct {
@@ -38,6 +40,7 @@ func NewTicketHandler(
 	priorityRepo usecase.TicketPriorityRepository,
 	departmentRepo usecase.DepartmentRepository,
 	userRepo *repository.UserRepository,
+	historyRepo *repository.TicketHistoryRepository,
 ) *TicketHandler {
 	return &TicketHandler{
 		TicketRepo:     repo,
@@ -45,6 +48,7 @@ func NewTicketHandler(
 		PriorityRepo:   priorityRepo,
 		DepartmentRepo: departmentRepo,
 		UserRepo:       userRepo,
+		HistoryRepo:    historyRepo,
 	}
 }
 
@@ -221,7 +225,6 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		return
 	}
 
-	// Явный парсинг assignee_id, если он пришёл как строка
 	if req.AssigneeID == uuid.Nil {
 		var raw map[string]interface{}
 		if err := c.ShouldBindJSON(&raw); err == nil {
@@ -274,6 +277,17 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		})
 		return
 	}
+
+	history := &domain.TicketHistory{
+		TicketID:        req.ID,
+		TicketCreatedAt: req.CreatedAt,
+		ChangedAt:       time.Now(),
+		ChangedBy:       req.CreatorID,
+		FieldName:       "ticket",
+		OldValue:        "",
+		NewValue:        "created",
+	}
+	_ = h.HistoryRepo.Create(history)
 	c.JSON(http.StatusCreated, req)
 }
 
@@ -342,6 +356,15 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 
 	req.ID = id
 
+	oldTicket, err := h.TicketRepo.GetByID(id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, model.APIError{
+			Code:    "TICKET_NOT_FOUND",
+			Message: "Ticket not found",
+		})
+		return
+	}
+
 	if err := h.TicketRepo.Update(&req); err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
 			Code:    "DATABASE_ERROR",
@@ -349,6 +372,44 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 		})
 		return
 	}
+
+	userID, _ := c.Get("user_id")
+	userUUID, _ := uuid.Parse(userID.(string))
+	now := time.Now()
+	if oldTicket.StatusID != req.StatusID {
+		h.HistoryRepo.Create(&domain.TicketHistory{
+			TicketID:        req.ID,
+			TicketCreatedAt: oldTicket.CreatedAt,
+			ChangedAt:       now,
+			ChangedBy:       userUUID,
+			FieldName:       "status",
+			OldValue:        strconv.Itoa(int(oldTicket.StatusID)),
+			NewValue:        strconv.Itoa(int(req.StatusID)),
+		})
+	}
+	if oldTicket.PriorityID != req.PriorityID {
+		h.HistoryRepo.Create(&domain.TicketHistory{
+			TicketID:        req.ID,
+			TicketCreatedAt: oldTicket.CreatedAt,
+			ChangedAt:       now,
+			ChangedBy:       userUUID,
+			FieldName:       "priority",
+			OldValue:        strconv.Itoa(int(oldTicket.PriorityID)),
+			NewValue:        strconv.Itoa(int(req.PriorityID)),
+		})
+	}
+	if oldTicket.Description != req.Description {
+		h.HistoryRepo.Create(&domain.TicketHistory{
+			TicketID:        req.ID,
+			TicketCreatedAt: oldTicket.CreatedAt,
+			ChangedAt:       now,
+			ChangedBy:       userUUID,
+			FieldName:       "description",
+			OldValue:        oldTicket.Description,
+			NewValue:        req.Description,
+		})
+	}
+
 	c.JSON(http.StatusOK, req)
 }
 
