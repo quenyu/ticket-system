@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"net/http"
+	"ticket-system/backend/internal/domain"
 	"ticket-system/backend/internal/model"
 	"ticket-system/backend/internal/usecase"
 
@@ -34,6 +35,9 @@ func (h *TicketHistoryHandler) GetHistory(c *gin.Context) {
 			Message: err.Error(),
 		})
 		return
+	}
+	if history == nil {
+		history = []*domain.TicketHistory{}
 	}
 	c.JSON(http.StatusOK, history)
 }
