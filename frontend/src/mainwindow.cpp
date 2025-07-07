@@ -4,7 +4,7 @@
 #include "config.h"
 
 #include <QHeaderView>
-#include <QMenuBar>
+// #include <QMenuBar>
 #include <QToolBar>
 #include <QTableView>
 #include <QHBoxLayout>
@@ -31,7 +31,7 @@ MainWindow::MainWindow(const QString &jwt, QWidget *parent)
 {
     // --- Title and size ---
     setWindowTitle("Ticket System - All Tickets");
-    resize(1200, 800);
+    resize(980, 720);
 
     // --- JWT → userId from payload ---
     QStringList parts = jwtToken.split('.');
@@ -45,12 +45,6 @@ MainWindow::MainWindow(const QString &jwt, QWidget *parent)
     qDebug() << "Extracted userId =" << userId;
 
     apiBaseUrl = Config::instance().fullApiUrl();
-
-    // --- Menu and toolbar ---
-    menuBar = new QMenuBar(this);
-    setMenuBar(menuBar);
-    menuBar->addMenu("File");
-    menuBar->addMenu("Help");
 
     toolBar = new QToolBar(this);
     addToolBar(toolBar);
@@ -75,9 +69,8 @@ MainWindow::MainWindow(const QString &jwt, QWidget *parent)
     tableView->setAlternatingRowColors(true);
     setCentralWidget(tableView);
 
-    // Set custom column widths
-    tableView->setColumnWidth(2, 300); // Description column wider
-    tableView->setColumnWidth(8, 110); // Updated At column narrower
+    // Set custom delegate for status column
+    tableView->setItemDelegateForColumn(3, new TicketBadgeDelegate(this));
 
     // --- Status bar ---
     m_statusBar = new QStatusBar(this);
@@ -278,7 +271,6 @@ void MainWindow::onDeleteTicket() {
 
 void MainWindow::onSearchChanged(const QString &text) {
     currentFilter = text;
-    // Здесь можно добавить фильтрацию тикетов
     qDebug() << "Search filter changed to:" << text;
 }
 

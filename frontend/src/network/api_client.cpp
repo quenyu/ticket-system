@@ -3,6 +3,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkRequest>
+#include <QDebug>
 
 APIClient::APIClient(QObject *parent) : QObject(parent) {}
 
@@ -140,6 +141,39 @@ void APIClient::registerUser(const QString &username, const QString &email, cons
             }
         } else {
             emit registrationFailed(reply->errorString());
+        }
+        reply->deleteLater();
+    });
+}
+
+void APIClient::updateTicket(const QString &token, const QString &ticketId, const QJsonObject &ticketData) {
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + ticketId);
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setRawHeader("Authorization", "Bearer " + token.toUtf8());
+    QNetworkReply *reply = manager.sendCustomRequest(req, "PATCH", QJsonDocument(ticketData).toJson());
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            emit ticketCreated(reply->readAll());
+        } else {
+            emit apiError(reply->errorString());
+        }
+        reply->deleteLater();
+    });
+}
+
+void APIClient::loadHistory(const QString &token, const QString &ticketId) {
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + ticketId + "/history");
+    QNetworkRequest req(url);
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setRawHeader("Authorization", "Bearer " + token.toUtf8());
+    qDebug() << "JWT for history:" << token;
+    QNetworkReply *reply = manager.get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            emit historyLoaded(reply->readAll());
+        } else {
+            emit apiError(reply->errorString());
         }
         reply->deleteLater();
     });

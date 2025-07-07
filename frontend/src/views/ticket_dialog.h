@@ -51,6 +51,8 @@ private:
     QComboBox *priorityCombo;
     QComboBox *assigneeCombo;
     QVector<UserInfo> users;
+    QPushButton *overviewSaveBtn = nullptr;
+    QPushButton *overviewCancelBtn = nullptr;
     void loadHistory();
     void loadComments();
     void loadAttachments();

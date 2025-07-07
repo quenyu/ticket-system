@@ -15,6 +15,8 @@ public:
     void getStatuses(const QString &token);
     void getPriorities(const QString &token);
     void createTicket(const QString &token, const QJsonObject &ticketData);
+    void updateTicket(const QString &token, const QString &ticketId, const QJsonObject &ticketData);
+    void loadHistory(const QString &token, const QString &ticketId);
 signals:
     void loginSuccess(const QString &token);
     void loginFailed(const QString &error);
@@ -27,6 +29,7 @@ signals:
     void prioritiesReceived(const QByteArray &data);
     void ticketCreated(const QByteArray &data);
     void apiError(const QString &error);
+    void historyLoaded(const QByteArray &data);
 private:
     QNetworkAccessManager manager;
 }; 
