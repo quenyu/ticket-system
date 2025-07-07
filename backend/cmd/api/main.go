@@ -44,7 +44,13 @@ func main() {
 	dictHandler := delivery.NewDictionaryHandler(depService, statService, prioService)
 
 	ticketRepo := repository.NewTicketRepository(db)
-	ticketHandler := delivery.NewTicketHandler(ticketRepo)
+	ticketHandler := delivery.NewTicketHandler(
+		ticketRepo,
+		statRepo,
+		prioRepo,
+		depRepo,
+		userRepo,
+	)
 
 	historyRepo := repository.NewTicketHistoryRepository(db)
 	historyHandler := delivery.NewTicketHistoryHandler(historyRepo)
@@ -73,7 +79,6 @@ func main() {
 	api.GET("/ticket_priorities", dictHandler.TicketPrioritiesList)
 	api.GET("/users", userHandler.ListUsers)
 
-	// Защищённые эндпойнты
 	protected := api.Group("")
 	protected.Use(middleware.JWT(cfg.JWTSecret))
 	// Ticket
