@@ -7,6 +7,7 @@ import (
 	"strings"
 	"ticket-system/backend/internal/domain"
 	"ticket-system/backend/internal/model"
+	"ticket-system/backend/internal/repository"
 	"ticket-system/backend/internal/usecase"
 
 	"github.com/google/uuid"
@@ -15,7 +16,11 @@ import (
 )
 
 type TicketHandler struct {
-	TicketRepo usecase.TicketRepository
+	TicketRepo     usecase.TicketRepository
+	StatusRepo     usecase.TicketStatusRepository
+	PriorityRepo   usecase.TicketPriorityRepository
+	DepartmentRepo usecase.DepartmentRepository
+	UserRepo       *repository.UserRepository
 }
 
 type TicketFilter struct {
@@ -27,8 +32,20 @@ type TicketFilter struct {
 	Offset       int
 }
 
-func NewTicketHandler(repo usecase.TicketRepository) *TicketHandler {
-	return &TicketHandler{TicketRepo: repo}
+func NewTicketHandler(
+	repo usecase.TicketRepository,
+	statusRepo usecase.TicketStatusRepository,
+	priorityRepo usecase.TicketPriorityRepository,
+	departmentRepo usecase.DepartmentRepository,
+	userRepo *repository.UserRepository,
+) *TicketHandler {
+	return &TicketHandler{
+		TicketRepo:     repo,
+		StatusRepo:     statusRepo,
+		PriorityRepo:   priorityRepo,
+		DepartmentRepo: departmentRepo,
+		UserRepo:       userRepo,
+	}
 }
 
 func (h *TicketHandler) validateTicket(ticket *domain.Ticket) *model.APIError {
@@ -147,7 +164,51 @@ func (h *TicketHandler) GetTickets(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, tickets)
+
+	// Enrich tickets with labels/names
+	statuses, _ := h.StatusRepo.List()
+	priorities, _ := h.PriorityRepo.List()
+	departments, _ := h.DepartmentRepo.List()
+	users, _ := h.UserRepo.List()
+
+	statusMap := make(map[int16]string)
+	for _, s := range statuses {
+		statusMap[s.ID] = s.Label
+	}
+	priorityMap := make(map[int16]string)
+	for _, p := range priorities {
+		priorityMap[p.ID] = p.Label
+	}
+	departmentMap := make(map[int16]string)
+	for _, d := range departments {
+		departmentMap[d.ID] = d.Name
+	}
+	userMap := make(map[string]string)
+	for _, u := range users {
+		userMap[u.ID.String()] = u.Username
+	}
+
+	var result []gin.H
+	for _, t := range tickets {
+		result = append(result, gin.H{
+			"ticket_id":       t.ID,
+			"title":           t.Title,
+			"description":     t.Description,
+			"status_id":       t.StatusID,
+			"status_label":    statusMap[t.StatusID],
+			"priority_id":     t.PriorityID,
+			"priority_label":  priorityMap[t.PriorityID],
+			"department_id":   t.DepartmentID,
+			"department_name": departmentMap[t.DepartmentID],
+			"assignee_id":     t.AssigneeID,
+			"assignee_name":   userMap[t.AssigneeID.String()],
+			"creator_id":      t.CreatorID,
+			"created_at":      t.CreatedAt,
+			"updated_at":      t.UpdatedAt,
+			"deleted_at":      t.DeletedAt,
+		})
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (h *TicketHandler) CreateTicket(c *gin.Context) {
@@ -158,6 +219,19 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 			Message: "Invalid request body",
 		})
 		return
+	}
+
+	// Явный парсинг assignee_id, если он пришёл как строка
+	if req.AssigneeID == uuid.Nil {
+		var raw map[string]interface{}
+		if err := c.ShouldBindJSON(&raw); err == nil {
+			if val, ok := raw["assignee_id"].(string); ok && val != "" {
+				parsed, err := uuid.Parse(val)
+				if err == nil {
+					req.AssigneeID = parsed
+				}
+			}
+		}
 	}
 
 	if validationError := h.validateTicket(&req); validationError != nil {
@@ -173,7 +247,25 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		})
 		return
 	}
-	req.CreatorID = userID.(uuid.UUID)
+
+	userIDStr, ok := userID.(string)
+	if !ok {
+		c.JSON(http.StatusBadRequest, model.APIError{
+			Code:    "INVALID_UUID",
+			Message: "user_id in context is not a string",
+		})
+		return
+	}
+
+	parsedUUID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.APIError{
+			Code:    "INVALID_UUID",
+			Message: "Invalid user_id in token",
+		})
+		return
+	}
+	req.CreatorID = parsedUUID
 
 	if err := h.TicketRepo.Create(&req); err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
