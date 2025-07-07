@@ -44,15 +44,16 @@ func main() {
 	dictHandler := delivery.NewDictionaryHandler(depService, statService, prioService)
 
 	ticketRepo := repository.NewTicketRepository(db)
+	historyRepo := repository.NewTicketHistoryRepository(db)
 	ticketHandler := delivery.NewTicketHandler(
 		ticketRepo,
 		statRepo,
 		prioRepo,
 		depRepo,
 		userRepo,
+		historyRepo,
 	)
 
-	historyRepo := repository.NewTicketHistoryRepository(db)
 	historyHandler := delivery.NewTicketHistoryHandler(historyRepo)
 
 	commentRepo := repository.NewTicketCommentRepository(db)
