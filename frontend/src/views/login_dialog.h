@@ -17,7 +17,6 @@ public:
 private slots:
     void onLoginClicked();
     void onRegisterClicked();
-    void onRegisterReply(QNetworkReply* reply);
 signals:
     void loginSuccess(const QString &token);
 private:

@@ -15,6 +15,7 @@
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QDebug>
+#include "register_dialog.h"
 
 LoginDialog::LoginDialog(QWidget *parent) : QDialog(parent) {
     setWindowTitle("Login");
@@ -153,31 +154,8 @@ void LoginDialog::onLoginClicked() {
 }
 
 void LoginDialog::onRegisterClicked() {
-    QString user = username();
-    QString pass = password();
-    QJsonObject json;
-    json["username"] = user;
-    json["password"] = pass;
-    QNetworkRequest request(QUrl(Config::instance().fullApiUrl() + "/auth/register"));
-    request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-    QNetworkReply* reply = networkManager->post(request, QJsonDocument(json).toJson());
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() { onRegisterReply(reply); });
-}
-
-void LoginDialog::onRegisterReply(QNetworkReply* reply) {
-    if (reply->error() == QNetworkReply::NoError) {
-        QMessageBox::information(this, "Успех", "Регистрация успешна! Теперь войдите.");
-    } else {
-        QByteArray response = reply->readAll();
-        QJsonDocument doc = QJsonDocument::fromJson(response);
-        QString errorMsg = "Ошибка регистрации";
-        if (!doc.isNull() && doc.isObject()) {
-            QJsonObject obj = doc.object();
-            if (obj.contains("error")) {
-                errorMsg = obj["error"].toObject()["message"].toString();
-            }
-        }
-        QMessageBox::warning(this, "Ошибка", errorMsg);
+    RegisterDialog dlg(this);
+    if (dlg.exec() == QDialog::Accepted) {
+        QMessageBox::information(this, "Success", "Registration successful! Now you can log in.");
     }
-    reply->deleteLater();
 } 
