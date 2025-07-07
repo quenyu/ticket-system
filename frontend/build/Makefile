@@ -309,6 +309,30 @@ src/views/login_dialog.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/views/login_dialog.cpp.s
 .PHONY : src/views/login_dialog.cpp.s
 
+src/views/register_dialog.obj: src/views/register_dialog.cpp.obj
+.PHONY : src/views/register_dialog.obj
+
+# target to build an object file
+src/views/register_dialog.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/views/register_dialog.cpp.obj
+.PHONY : src/views/register_dialog.cpp.obj
+
+src/views/register_dialog.i: src/views/register_dialog.cpp.i
+.PHONY : src/views/register_dialog.i
+
+# target to preprocess a source file
+src/views/register_dialog.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/views/register_dialog.cpp.i
+.PHONY : src/views/register_dialog.cpp.i
+
+src/views/register_dialog.s: src/views/register_dialog.cpp.s
+.PHONY : src/views/register_dialog.s
+
+# target to generate assembly for a file
+src/views/register_dialog.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/views/register_dialog.cpp.s
+.PHONY : src/views/register_dialog.cpp.s
+
 src/views/ticket_dialog.obj: src/views/ticket_dialog.cpp.obj
 .PHONY : src/views/ticket_dialog.obj
 
@@ -388,6 +412,9 @@ help:
 	@echo ... src/views/login_dialog.obj
 	@echo ... src/views/login_dialog.i
 	@echo ... src/views/login_dialog.s
+	@echo ... src/views/register_dialog.obj
+	@echo ... src/views/register_dialog.i
+	@echo ... src/views/register_dialog.s
 	@echo ... src/views/ticket_dialog.obj
 	@echo ... src/views/ticket_dialog.i
 	@echo ... src/views/ticket_dialog.s

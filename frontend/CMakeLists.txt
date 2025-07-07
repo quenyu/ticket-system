@@ -15,6 +15,7 @@ set(SOURCES
     src/mainwindow.cpp
     src/ticket_model.cpp
     src/views/ticket_dialog.cpp
+    src/views/register_dialog.cpp
     src/dictionary_model.cpp
     src/config.cpp
 )
@@ -25,6 +26,7 @@ set(HEADERS
     src/mainwindow.h
     src/ticket_model.h
     src/views/ticket_dialog.h
+    src/views/register_dialog.h
     src/dictionary_model.h
     src/config.h
 )
@@ -36,6 +38,7 @@ add_executable(ticket_frontend
     src/mainwindow.cpp
     src/ticket_model.cpp
     src/views/ticket_dialog.cpp
+    src/views/register_dialog.cpp
     src/dictionary_model.cpp
     src/config.cpp
 )
