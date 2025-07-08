@@ -213,6 +213,30 @@ src/mainwindow.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/mainwindow.cpp.s
 .PHONY : src/mainwindow.cpp.s
 
+src/models/comment_model.obj: src/models/comment_model.cpp.obj
+.PHONY : src/models/comment_model.obj
+
+# target to build an object file
+src/models/comment_model.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/comment_model.cpp.obj
+.PHONY : src/models/comment_model.cpp.obj
+
+src/models/comment_model.i: src/models/comment_model.cpp.i
+.PHONY : src/models/comment_model.i
+
+# target to preprocess a source file
+src/models/comment_model.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/comment_model.cpp.i
+.PHONY : src/models/comment_model.cpp.i
+
+src/models/comment_model.s: src/models/comment_model.cpp.s
+.PHONY : src/models/comment_model.s
+
+# target to generate assembly for a file
+src/models/comment_model.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/comment_model.cpp.s
+.PHONY : src/models/comment_model.cpp.s
+
 src/models/dictionary_model.obj: src/models/dictionary_model.cpp.obj
 .PHONY : src/models/dictionary_model.obj
 
@@ -424,6 +448,9 @@ help:
 	@echo ... src/mainwindow.obj
 	@echo ... src/mainwindow.i
 	@echo ... src/mainwindow.s
+	@echo ... src/models/comment_model.obj
+	@echo ... src/models/comment_model.i
+	@echo ... src/models/comment_model.s
 	@echo ... src/models/dictionary_model.obj
 	@echo ... src/models/dictionary_model.i
 	@echo ... src/models/dictionary_model.s

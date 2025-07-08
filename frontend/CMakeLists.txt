@@ -17,6 +17,7 @@ set(SOURCES
     src/network/api_client.cpp
     src/models/ticket_model.cpp
     src/models/dictionary_model.cpp
+    src/models/comment_model.cpp
     src/mainwindow.cpp
     src/config.cpp
 )
