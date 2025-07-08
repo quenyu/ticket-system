@@ -64,8 +64,8 @@ func main() {
 
 	r := gin.New()
 
-	r.Use(middleware.Logger())
-	r.Use(middleware.ErrorLogger())
+	r.Use(gin.Logger())
+	// r.Use(middleware.ErrorLogger())
 	r.Use(gin.Recovery())
 
 	r.GET("/health", func(c *gin.Context) {
