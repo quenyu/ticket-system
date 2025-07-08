@@ -58,7 +58,36 @@ func (h *TicketCommentHandler) AddComment(c *gin.Context) {
 		})
 		return
 	}
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "No user_id in token",
+		})
+		return
+	}
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "user_id in token is not a string",
+		})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "Invalid user_id in token",
+		})
+		return
+	}
+	comment.AuthorID = userID
+
 	comment.TicketID = ticketID
+	if comment.ID == uuid.Nil {
+		comment.ID = uuid.New()
+	}
 	if err := h.Repo.Create(&comment); err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
 			Code:    "500",
