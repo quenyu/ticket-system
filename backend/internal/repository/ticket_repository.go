@@ -64,8 +64,8 @@ func (r *TicketRepository) Search(filter usecase.TicketFilter) ([]*domain.Ticket
 		db = db.Where("department_id = ?", *filter.DepartmentID)
 	}
 	if filter.Q != "" {
-		q := "%" + filter.Q + "%"
-		db = db.Where("title ILIKE ? OR description ILIKE ?", q, q)
+		db = db.Where("search_vector @@ plainto_tsquery('russian', ?)", filter.Q)
+		db = db.Order("ts_rank(search_vector, plainto_tsquery('russian', '" + filter.Q + "')) DESC")
 	}
 	if filter.Limit > 0 {
 		db = db.Limit(filter.Limit)

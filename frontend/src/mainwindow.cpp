@@ -308,13 +308,12 @@ void MainWindow::onFilterChanged(const QModelIndex &index) {
     loadTickets();
 }
 
-// ✨ NEW: Slot for when the search button is clicked
 void MainWindow::onSearchTriggered() {
     QString searchText = m_searchEdit->text().trimmed();
     if (!searchText.isEmpty()) {
-        m_currentQueryItems.insert("search", searchText);
+        m_currentQueryItems.insert("q", searchText);
     } else {
-        m_currentQueryItems.remove("search");
+        m_currentQueryItems.remove("q");
     }
     loadTickets();
 }
