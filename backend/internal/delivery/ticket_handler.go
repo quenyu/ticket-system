@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -291,7 +292,9 @@ func (h *TicketHandler) CreateTicket(c *gin.Context) {
 		OldValue:        "",
 		NewValue:        "created",
 	}
-	_ = h.HistoryRepo.Create(history)
+	if err := h.HistoryRepo.Create(history); err != nil {
+		log.Printf("failed to save ticket history: %v", err)
+	}
 	c.JSON(http.StatusCreated, req)
 }
 
@@ -381,7 +384,7 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 	userUUID, _ := uuid.Parse(userID.(string))
 	now := time.Now()
 	if oldTicket.StatusID != req.StatusID {
-		h.HistoryRepo.Create(&domain.TicketHistory{
+		if err := h.HistoryRepo.Create(&domain.TicketHistory{
 			TicketID:        req.ID,
 			TicketCreatedAt: oldTicket.CreatedAt,
 			ChangedAt:       now,
@@ -389,10 +392,12 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 			FieldName:       "status",
 			OldValue:        strconv.Itoa(int(oldTicket.StatusID)),
 			NewValue:        strconv.Itoa(int(req.StatusID)),
-		})
+		}); err != nil {
+			log.Printf("failed to save ticket history: %v", err)
+		}
 	}
 	if oldTicket.PriorityID != req.PriorityID {
-		h.HistoryRepo.Create(&domain.TicketHistory{
+		if err := h.HistoryRepo.Create(&domain.TicketHistory{
 			TicketID:        req.ID,
 			TicketCreatedAt: oldTicket.CreatedAt,
 			ChangedAt:       now,
@@ -400,10 +405,12 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 			FieldName:       "priority",
 			OldValue:        strconv.Itoa(int(oldTicket.PriorityID)),
 			NewValue:        strconv.Itoa(int(req.PriorityID)),
-		})
+		}); err != nil {
+			log.Printf("failed to save ticket history: %v", err)
+		}
 	}
 	if oldTicket.Description != req.Description {
-		h.HistoryRepo.Create(&domain.TicketHistory{
+		if err := h.HistoryRepo.Create(&domain.TicketHistory{
 			TicketID:        req.ID,
 			TicketCreatedAt: oldTicket.CreatedAt,
 			ChangedAt:       now,
@@ -411,7 +418,9 @@ func (h *TicketHandler) UpdateTicket(c *gin.Context) {
 			FieldName:       "description",
 			OldValue:        oldTicket.Description,
 			NewValue:        req.Description,
-		})
+		}); err != nil {
+			log.Printf("failed to save ticket history: %v", err)
+		}
 	}
 
 	c.JSON(http.StatusOK, req)
