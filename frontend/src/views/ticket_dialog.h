@@ -5,6 +5,8 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QComboBox>
+#include "models/comment_model.h"
+#include <QListView>
 
 class QTabWidget;
 class QWidget;
@@ -53,6 +55,10 @@ private:
     QVector<UserInfo> users;
     QPushButton *overviewSaveBtn = nullptr;
     QPushButton *overviewCancelBtn = nullptr;
+    QListView *m_commentsListView = nullptr;
+    CommentModel *m_commentModel = nullptr;
+    QTextEdit *m_newCommentEdit = nullptr;
+    QPushButton *m_postCommentBtn = nullptr;
     void loadHistory();
     void loadComments();
     void loadAttachments();
@@ -61,4 +67,5 @@ private:
     void loadPriorities();
     void loadUsers();
     void filterAssigneesByDepartment(int departmentId);
+    void postNewComment();
 }; 

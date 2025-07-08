@@ -25,6 +25,8 @@
 #include <QDateTime>
 #include "models/ticket_model.h"
 #include "models/dictionary_model.h"
+#include "models/comment_model.h"
+#include <QListView>
 
 TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QWidget *parent, Mode mode)
     : QDialog(parent), m_ticket(ticket), m_jwtToken(jwtToken), m_mode(mode) {
@@ -121,6 +123,23 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         historyLayout->addLayout(historyBtnLayout);
         tabWidget->addTab(historyTab, "History");
         
+        // --- COMMENTS TAB ---
+        commentsTab = new QWidget(this);
+        QVBoxLayout *commentsLayout = new QVBoxLayout(commentsTab);
+        m_commentModel = new CommentModel(this);
+        m_commentsListView = new QListView(commentsTab);
+        m_commentsListView->setModel(m_commentModel);
+        m_newCommentEdit = new QTextEdit(commentsTab);
+        m_newCommentEdit->setPlaceholderText("Write a comment...");
+        m_postCommentBtn = new QPushButton("Post Comment", commentsTab);
+        commentsLayout->addWidget(new QLabel("Comments:", commentsTab));
+        commentsLayout->addWidget(m_commentsListView);
+        commentsLayout->addWidget(m_newCommentEdit);
+        commentsLayout->addWidget(m_postCommentBtn);
+        commentsTab->setLayout(commentsLayout);
+        tabWidget->addTab(commentsTab, "Comments");
+        connect(m_postCommentBtn, &QPushButton::clicked, this, &TicketDialog::postNewComment);
+        
         mainLayout->addWidget(tabWidget);
         
         qDebug() << "Connecting signals...";
@@ -150,6 +169,7 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         
         if (mode == Edit && !ticket.id.isEmpty()) {
             loadHistory();
+            loadComments();
         }
         
         qDebug() << "=== TicketDialog constructor SUCCESS ===";
@@ -590,6 +610,67 @@ void TicketDialog::loadHistory() {
         }
         historyView->setModel(model);
         historyView->resizeColumnsToContents();
+        reply->deleteLater();
+    });
+} 
+
+void TicketDialog::loadComments() {
+    if (m_ticket.id.isEmpty()) {
+        m_commentModel->clearComments();
+        return;
+    }
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + m_ticket.id + "/comments");
+    QNetworkRequest request(url);
+    request.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
+    QNetworkReply *reply = network->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+            if (doc.isArray()) {
+                m_commentModel->loadComments(doc.array());
+            } else {
+                qWarning() << "Expected JSON array for comments, but got something else.";
+            }
+        } else {
+            qWarning() << "Failed to load comments:" << reply->errorString();
+        }
+        reply->deleteLater();
+    });
+}
+
+void TicketDialog::postNewComment() {
+    QString content = m_newCommentEdit->toPlainText().trimmed();
+    if (content.isEmpty() || m_ticket.id.isEmpty()) {
+        return;
+    }
+    CommentItem newComment;
+    newComment.ticketId = m_ticket.id;
+    newComment.ticketCreatedAt = m_ticket.createdAt;
+    newComment.content = content;
+    newComment.createdAt = QDateTime::currentDateTimeUtc();
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + m_ticket.id + "/comments");
+    QNetworkRequest request(url);
+    request.setRawHeader("Content-Type", "application/json");
+    request.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
+    QJsonObject commentJson;
+    commentJson["content"] = content;
+    commentJson["ticket_created_at"] = m_ticket.createdAtRaw;
+    QNetworkReply *reply = network->post(request, QJsonDocument(commentJson).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply, newComment]() mutable {
+        if (reply->error() == QNetworkReply::NoError) {
+            QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+            if (doc.isObject()) {
+                QJsonObject responseObj = doc.object();
+                newComment.id = responseObj.value("comment_id").toString();
+                newComment.createdAt = QDateTime::fromString(responseObj.value("created_at").toString(), Qt::ISODate);
+                newComment.authorName = responseObj.value("author_name").toString(newComment.authorName);
+            }
+            m_commentModel->addComment(newComment);
+            m_newCommentEdit->clear();
+            m_commentsListView->scrollToBottom();
+        } else {
+            qWarning() << "Failed to post comment:" << reply->errorString();
+        }
         reply->deleteLater();
     });
 } 
