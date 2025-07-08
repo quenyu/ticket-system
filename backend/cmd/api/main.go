@@ -93,6 +93,8 @@ func main() {
 	// Ticket comments
 	protected.GET("/tickets/:id/comments", commentHandler.GetComments)
 	protected.POST("/tickets/:id/comments", commentHandler.AddComment)
+	protected.DELETE("/comments/:id", commentHandler.DeleteComment)
+	protected.PATCH("/comments/:id", commentHandler.UpdateComment)
 	// Ticket attachments
 	protected.GET("/tickets/:id/attachments", attachmentHandler.GetAttachments)
 	protected.POST("/tickets/:id/attachments", attachmentHandler.AddAttachment)

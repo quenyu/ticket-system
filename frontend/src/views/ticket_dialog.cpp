@@ -25,9 +25,14 @@
 #include <QDateTime>
 #include "models/ticket_model.h"
 #include "models/dictionary_model.h"
+#include "models/comment_model.h"
+#include <QListView>
+#include <QInputDialog>
+#include <QMenu>
 
 TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QWidget *parent, Mode mode)
     : QDialog(parent), m_ticket(ticket), m_jwtToken(jwtToken), m_mode(mode) {
+    decodeJwtToken();
     qDebug() << "=== TicketDialog constructor START ===";
     qDebug() << "Mode:" << (mode == Create ? "Create" : "Edit");
     qDebug() << "Ticket ID:" << ticket.id;
@@ -121,6 +126,59 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         historyLayout->addLayout(historyBtnLayout);
         tabWidget->addTab(historyTab, "History");
         
+        // --- COMMENTS TAB ---
+        commentsTab = new QWidget(this);
+        QVBoxLayout *commentsLayout = new QVBoxLayout(commentsTab);
+        m_commentModel = new CommentModel(this);
+        m_commentsListView = new QListView(commentsTab);
+        m_commentsListView->setModel(m_commentModel);
+        m_newCommentEdit = new QTextEdit(commentsTab);
+        m_newCommentEdit->setPlaceholderText("Write a comment...");
+        m_postCommentBtn = new QPushButton("Post Comment", commentsTab);
+        commentsLayout->addWidget(new QLabel("Comments:", commentsTab));
+        commentsLayout->addWidget(m_commentsListView);
+        commentsLayout->addWidget(m_newCommentEdit);
+        commentsLayout->addWidget(m_postCommentBtn);
+        commentsTab->setLayout(commentsLayout);
+        tabWidget->addTab(commentsTab, "Comments");
+        connect(m_postCommentBtn, &QPushButton::clicked, this, &TicketDialog::postNewComment);
+        m_commentsListView->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(m_commentsListView, &QListView::customContextMenuRequested, this, [this](const QPoint &pos) {
+            QModelIndex index = m_commentsListView->indexAt(pos);
+            QMenu menu;
+            QAction *deleteAction = menu.addAction("Delete");
+            bool canDelete = false;
+            if (index.isValid()) {
+                CommentItem comment = m_commentModel->getComment(index.row());
+                canDelete = (m_userRole == "00000000-0000-0000-0000-000000000002" || comment.authorId == m_userId);
+                deleteAction->setEnabled(canDelete);
+            } else {
+                deleteAction->setEnabled(false);
+            }
+            QAction *selected = menu.exec(m_commentsListView->viewport()->mapToGlobal(pos));
+            if (selected == deleteAction) {
+                if (!canDelete) {
+                    QMessageBox::information(this, "Нет прав", "Вы не можете удалить этот комментарий.");
+                    return;
+                }
+                if (QMessageBox::question(this, "Delete Comment", "Are you sure you want to delete this comment?") == QMessageBox::Yes) {
+                    CommentItem comment = m_commentModel->getComment(index.row());
+                    QUrl url(Config::instance().fullApiUrl() + "/comments/" + comment.id);
+                    QNetworkRequest request(url);
+                    request.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
+                    QNetworkReply *reply = network->deleteResource(request);
+                    connect(reply, &QNetworkReply::finished, this, [this, reply, row=index.row()]() {
+                        if (reply->error() == QNetworkReply::NoError) {
+                            m_commentModel->removeComment(row);
+                        } else {
+                            QMessageBox::warning(this, "Error", "Failed to delete comment: " + reply->errorString());
+                        }
+                        reply->deleteLater();
+                    });
+                }
+            }
+        });
+        
         mainLayout->addWidget(tabWidget);
         
         qDebug() << "Connecting signals...";
@@ -150,6 +208,7 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         
         if (mode == Edit && !ticket.id.isEmpty()) {
             loadHistory();
+            loadComments();
         }
         
         qDebug() << "=== TicketDialog constructor SUCCESS ===";
@@ -160,6 +219,20 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         qDebug() << "UNKNOWN EXCEPTION in TicketDialog constructor";
         throw;
     }
+}
+
+void TicketDialog::decodeJwtToken() {
+    QStringList parts = m_jwtToken.split('.');
+    if (parts.size() >= 2) {
+        QByteArray payload = QByteArray::fromBase64(parts[1].toUtf8(), QByteArray::Base64UrlEncoding);
+        QJsonDocument doc = QJsonDocument::fromJson(payload);
+        if (doc.isObject()) {
+            QJsonObject obj = doc.object();
+            m_userId = obj.value("user_id").toString();
+            m_userRole = obj.value("role_id").toString();
+        }
+    }
+    qDebug() << "Extracted userId =" << m_userId << ", role =" << m_userRole;
 }
 
 void TicketDialog::loadDepartments() {
@@ -590,6 +663,70 @@ void TicketDialog::loadHistory() {
         }
         historyView->setModel(model);
         historyView->resizeColumnsToContents();
+        reply->deleteLater();
+    });
+} 
+
+void TicketDialog::loadComments() {
+    if (m_ticket.id.isEmpty()) {
+        m_commentModel->clearComments();
+        return;
+    }
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + m_ticket.id + "/comments");
+    QNetworkRequest request(url);
+    request.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
+    QNetworkReply *reply = network->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+            if (doc.isArray()) {
+                m_commentModel->loadComments(doc.array());
+            } else {
+                qWarning() << "Expected JSON array for comments, but got something else.";
+            }
+        } else {
+            qWarning() << "Failed to load comments:" << reply->errorString();
+        }
+        reply->deleteLater();
+    });
+}
+
+void TicketDialog::postNewComment() {
+    QString content = m_newCommentEdit->toPlainText().trimmed();
+    if (content.isEmpty() || m_ticket.id.isEmpty()) {
+        return;
+    }
+    CommentItem newComment;
+    newComment.ticketId = m_ticket.id;
+    newComment.ticketCreatedAt = m_ticket.createdAt;
+    newComment.content = content;
+    newComment.createdAt = QDateTime::currentDateTimeUtc();
+    newComment.authorId = m_userId;
+    newComment.authorName = "";
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + m_ticket.id + "/comments");
+    QNetworkRequest request(url);
+    request.setRawHeader("Content-Type", "application/json");
+    request.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
+    QJsonObject commentJson;
+    commentJson["content"] = content;
+    commentJson["ticket_created_at"] = m_ticket.createdAtRaw;
+    QNetworkReply *reply = network->post(request, QJsonDocument(commentJson).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply, newComment]() mutable {
+        if (reply->error() == QNetworkReply::NoError) {
+            QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+            if (doc.isObject()) {
+                QJsonObject responseObj = doc.object();
+                newComment.id = responseObj.value("comment_id").toString();
+                newComment.createdAt = QDateTime::fromString(responseObj.value("created_at").toString(), Qt::ISODate);
+                newComment.authorName = responseObj.value("author_name").toString(newComment.authorName);
+                newComment.authorId = responseObj.value("author_id").toString(newComment.authorId);
+            }
+            m_commentModel->addComment(newComment);
+            m_newCommentEdit->clear();
+            m_commentsListView->scrollToBottom();
+        } else {
+            qWarning() << "Failed to post comment:" << reply->errorString();
+        }
         reply->deleteLater();
     });
 } 
