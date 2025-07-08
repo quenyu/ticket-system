@@ -60,12 +60,11 @@ func main() {
 	commentHandler := delivery.NewTicketCommentHandler(commentRepo)
 
 	attachmentRepo := repository.NewTicketAttachmentRepository(db)
-	attachmentHandler := delivery.NewTicketAttachmentHandler(attachmentRepo)
+	attachmentHandler := delivery.NewTicketAttachmentHandler(attachmentRepo, ticketRepo)
 
 	r := gin.New()
 
 	r.Use(gin.Logger())
-	// r.Use(middleware.ErrorLogger())
 	r.Use(gin.Recovery())
 
 	r.GET("/health", func(c *gin.Context) {
@@ -100,6 +99,7 @@ func main() {
 	protected.POST("/tickets/:id/attachments", attachmentHandler.AddAttachment)
 	protected.GET("/tickets/:id/attachments/:att_id", attachmentHandler.GetAttachmentByID)
 	protected.DELETE("/tickets/:id/attachments/:att_id", attachmentHandler.DeleteAttachment)
+	protected.GET("/tickets/:id/attachments/:att_id/download", attachmentHandler.DownloadAttachment)
 
 	if err := r.Run(":" + cfg.ServerPort); err != nil {
 		log.Fatalf("failed to start server: %v", err)
