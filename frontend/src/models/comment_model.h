@@ -44,6 +44,8 @@ public:
     void addComment(const CommentItem& comment);
     CommentItem getComment(int row) const;
     void clearComments();
+    void updateComment(int row, const CommentItem& updatedComment);
+    void removeComment(int row);
 private:
     QVector<CommentItem> m_comments;
 }; 

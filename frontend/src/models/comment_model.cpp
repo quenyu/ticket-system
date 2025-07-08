@@ -78,8 +78,11 @@ void CommentModel::loadComments(const QJsonArray& array) {
 }
 
 void CommentModel::addComment(const CommentItem& comment) {
+    CommentItem c = comment;
+    if (c.authorId.isEmpty()) {
+    }
     beginInsertRows(QModelIndex(), m_comments.size(), m_comments.size());
-    m_comments.append(comment);
+    m_comments.append(c);
     endInsertRows();
 }
 
@@ -94,4 +97,17 @@ void CommentModel::clearComments() {
     beginResetModel();
     m_comments.clear();
     endResetModel();
+}
+
+void CommentModel::updateComment(int row, const CommentItem& updatedComment) {
+    if (row < 0 || row >= m_comments.size()) return;
+    m_comments[row] = updatedComment;
+    emit dataChanged(index(row), index(row));
+}
+
+void CommentModel::removeComment(int row) {
+    if (row < 0 || row >= m_comments.size()) return;
+    beginRemoveRows(QModelIndex(), row, row);
+    m_comments.removeAt(row);
+    endRemoveRows();
 } 
