@@ -165,30 +165,6 @@ src/config.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/config.cpp.s
 .PHONY : src/config.cpp.s
 
-src/dictionary_model.obj: src/dictionary_model.cpp.obj
-.PHONY : src/dictionary_model.obj
-
-# target to build an object file
-src/dictionary_model.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/dictionary_model.cpp.obj
-.PHONY : src/dictionary_model.cpp.obj
-
-src/dictionary_model.i: src/dictionary_model.cpp.i
-.PHONY : src/dictionary_model.i
-
-# target to preprocess a source file
-src/dictionary_model.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/dictionary_model.cpp.i
-.PHONY : src/dictionary_model.cpp.i
-
-src/dictionary_model.s: src/dictionary_model.cpp.s
-.PHONY : src/dictionary_model.s
-
-# target to generate assembly for a file
-src/dictionary_model.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/dictionary_model.cpp.s
-.PHONY : src/dictionary_model.cpp.s
-
 src/main.obj: src/main.cpp.obj
 .PHONY : src/main.obj
 
@@ -237,6 +213,54 @@ src/mainwindow.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/mainwindow.cpp.s
 .PHONY : src/mainwindow.cpp.s
 
+src/models/dictionary_model.obj: src/models/dictionary_model.cpp.obj
+.PHONY : src/models/dictionary_model.obj
+
+# target to build an object file
+src/models/dictionary_model.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/dictionary_model.cpp.obj
+.PHONY : src/models/dictionary_model.cpp.obj
+
+src/models/dictionary_model.i: src/models/dictionary_model.cpp.i
+.PHONY : src/models/dictionary_model.i
+
+# target to preprocess a source file
+src/models/dictionary_model.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/dictionary_model.cpp.i
+.PHONY : src/models/dictionary_model.cpp.i
+
+src/models/dictionary_model.s: src/models/dictionary_model.cpp.s
+.PHONY : src/models/dictionary_model.s
+
+# target to generate assembly for a file
+src/models/dictionary_model.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/dictionary_model.cpp.s
+.PHONY : src/models/dictionary_model.cpp.s
+
+src/models/ticket_model.obj: src/models/ticket_model.cpp.obj
+.PHONY : src/models/ticket_model.obj
+
+# target to build an object file
+src/models/ticket_model.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/ticket_model.cpp.obj
+.PHONY : src/models/ticket_model.cpp.obj
+
+src/models/ticket_model.i: src/models/ticket_model.cpp.i
+.PHONY : src/models/ticket_model.i
+
+# target to preprocess a source file
+src/models/ticket_model.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/ticket_model.cpp.i
+.PHONY : src/models/ticket_model.cpp.i
+
+src/models/ticket_model.s: src/models/ticket_model.cpp.s
+.PHONY : src/models/ticket_model.s
+
+# target to generate assembly for a file
+src/models/ticket_model.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/ticket_model.cpp.s
+.PHONY : src/models/ticket_model.cpp.s
+
 src/network/api_client.obj: src/network/api_client.cpp.obj
 .PHONY : src/network/api_client.obj
 
@@ -260,30 +284,6 @@ src/network/api_client.s: src/network/api_client.cpp.s
 src/network/api_client.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/network/api_client.cpp.s
 .PHONY : src/network/api_client.cpp.s
-
-src/ticket_model.obj: src/ticket_model.cpp.obj
-.PHONY : src/ticket_model.obj
-
-# target to build an object file
-src/ticket_model.cpp.obj:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/ticket_model.cpp.obj
-.PHONY : src/ticket_model.cpp.obj
-
-src/ticket_model.i: src/ticket_model.cpp.i
-.PHONY : src/ticket_model.i
-
-# target to preprocess a source file
-src/ticket_model.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/ticket_model.cpp.i
-.PHONY : src/ticket_model.cpp.i
-
-src/ticket_model.s: src/ticket_model.cpp.s
-.PHONY : src/ticket_model.s
-
-# target to generate assembly for a file
-src/ticket_model.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/ticket_model.cpp.s
-.PHONY : src/ticket_model.cpp.s
 
 src/views/login_dialog.obj: src/views/login_dialog.cpp.obj
 .PHONY : src/views/login_dialog.obj
@@ -357,6 +357,30 @@ src/views/ticket_dialog.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/views/ticket_dialog.cpp.s
 .PHONY : src/views/ticket_dialog.cpp.s
 
+src/views/ticket_table_view.obj: src/views/ticket_table_view.cpp.obj
+.PHONY : src/views/ticket_table_view.obj
+
+# target to build an object file
+src/views/ticket_table_view.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/views/ticket_table_view.cpp.obj
+.PHONY : src/views/ticket_table_view.cpp.obj
+
+src/views/ticket_table_view.i: src/views/ticket_table_view.cpp.i
+.PHONY : src/views/ticket_table_view.i
+
+# target to preprocess a source file
+src/views/ticket_table_view.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/views/ticket_table_view.cpp.i
+.PHONY : src/views/ticket_table_view.cpp.i
+
+src/views/ticket_table_view.s: src/views/ticket_table_view.cpp.s
+.PHONY : src/views/ticket_table_view.s
+
+# target to generate assembly for a file
+src/views/ticket_table_view.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/views/ticket_table_view.cpp.s
+.PHONY : src/views/ticket_table_view.cpp.s
+
 ticket_frontend_autogen/mocs_compilation.obj: ticket_frontend_autogen/mocs_compilation.cpp.obj
 .PHONY : ticket_frontend_autogen/mocs_compilation.obj
 
@@ -394,21 +418,21 @@ help:
 	@echo ... src/config.obj
 	@echo ... src/config.i
 	@echo ... src/config.s
-	@echo ... src/dictionary_model.obj
-	@echo ... src/dictionary_model.i
-	@echo ... src/dictionary_model.s
 	@echo ... src/main.obj
 	@echo ... src/main.i
 	@echo ... src/main.s
 	@echo ... src/mainwindow.obj
 	@echo ... src/mainwindow.i
 	@echo ... src/mainwindow.s
+	@echo ... src/models/dictionary_model.obj
+	@echo ... src/models/dictionary_model.i
+	@echo ... src/models/dictionary_model.s
+	@echo ... src/models/ticket_model.obj
+	@echo ... src/models/ticket_model.i
+	@echo ... src/models/ticket_model.s
 	@echo ... src/network/api_client.obj
 	@echo ... src/network/api_client.i
 	@echo ... src/network/api_client.s
-	@echo ... src/ticket_model.obj
-	@echo ... src/ticket_model.i
-	@echo ... src/ticket_model.s
 	@echo ... src/views/login_dialog.obj
 	@echo ... src/views/login_dialog.i
 	@echo ... src/views/login_dialog.s
@@ -418,6 +442,9 @@ help:
 	@echo ... src/views/ticket_dialog.obj
 	@echo ... src/views/ticket_dialog.i
 	@echo ... src/views/ticket_dialog.s
+	@echo ... src/views/ticket_table_view.obj
+	@echo ... src/views/ticket_table_view.i
+	@echo ... src/views/ticket_table_view.s
 	@echo ... ticket_frontend_autogen/mocs_compilation.obj
 	@echo ... ticket_frontend_autogen/mocs_compilation.i
 	@echo ... ticket_frontend_autogen/mocs_compilation.s

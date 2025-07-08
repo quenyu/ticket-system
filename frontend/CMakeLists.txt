@@ -11,36 +11,37 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets Network)
 set(SOURCES
     src/main.cpp
     src/views/login_dialog.cpp
-    src/network/api_client.cpp
-    src/mainwindow.cpp
-    src/ticket_model.cpp
     src/views/ticket_dialog.cpp
     src/views/register_dialog.cpp
-    src/dictionary_model.cpp
+    src/views/ticket_table_view.cpp
+    src/network/api_client.cpp
+    src/models/ticket_model.cpp
+    src/models/dictionary_model.cpp
+    src/mainwindow.cpp
     src/config.cpp
 )
 
 set(HEADERS
     src/views/login_dialog.h
-    src/network/api_client.h
-    src/mainwindow.h
-    src/ticket_model.h
     src/views/ticket_dialog.h
     src/views/register_dialog.h
-    src/dictionary_model.h
+    src/views/ticket_table_view.h
+    src/network/api_client.h
+    src/models/ticket_model.h
+    src/models/dictionary_model.h
+    src/mainwindow.h
     src/config.h
 )
 
 add_executable(ticket_frontend
-    src/main.cpp
-    src/network/api_client.cpp
-    src/views/login_dialog.cpp
-    src/mainwindow.cpp
-    src/ticket_model.cpp
-    src/views/ticket_dialog.cpp
-    src/views/register_dialog.cpp
-    src/dictionary_model.cpp
-    src/config.cpp
+    ${SOURCES}
+)
+
+target_include_directories(ticket_frontend PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/models
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/views
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/network
 )
 
 target_link_libraries(ticket_frontend

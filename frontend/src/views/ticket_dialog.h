@@ -1,6 +1,6 @@
 #pragma once
 #include <QDialog>
-#include "../ticket_model.h"
+#include "models/ticket_model.h"
 #include <QPushButton>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>

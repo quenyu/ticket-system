@@ -169,7 +169,11 @@ func (h *TicketHandler) GetTickets(c *gin.Context) {
 		return
 	}
 
-	// Enrich tickets with labels/names
+	if len(tickets) == 0 {
+		c.JSON(http.StatusOK, make([]gin.H, 0))
+		return
+	}
+
 	statuses, _ := h.StatusRepo.List()
 	priorities, _ := h.PriorityRepo.List()
 	departments, _ := h.DepartmentRepo.List()
