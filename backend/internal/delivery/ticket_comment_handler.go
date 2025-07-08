@@ -1,10 +1,12 @@
 package delivery
 
 import (
+	"fmt"
 	"net/http"
 	"ticket-system/backend/internal/domain"
 	"ticket-system/backend/internal/model"
 	"ticket-system/backend/internal/usecase"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -96,4 +98,177 @@ func (h *TicketCommentHandler) AddComment(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusCreated, comment)
+}
+
+func (h *TicketCommentHandler) DeleteComment(c *gin.Context) {
+	commentIDStr := c.Param("id")
+	commentID, err := uuid.Parse(commentIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.APIError{
+			Code:    "400",
+			Message: "Invalid comment id",
+		})
+		return
+	}
+	// Получаем user_id из токена
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "No user_id in token",
+		})
+		return
+	}
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "user_id in token is not a string",
+		})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "Invalid user_id in token",
+		})
+		return
+	}
+
+	roleIDRaw, exists := c.Get("role_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "No role_id in token",
+		})
+		return
+	}
+	roleID, ok := roleIDRaw.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "role_id in token is not a string",
+		})
+		return
+	}
+	isAdmin := roleID == "00000000-0000-0000-0000-000000000002"
+
+	comment, err := h.Repo.GetByID(commentID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, model.APIError{
+			Code:    "404",
+			Message: "Comment not found",
+		})
+		return
+	}
+	if comment.AuthorID != userID && !isAdmin {
+		c.JSON(http.StatusForbidden, model.APIError{
+			Code:    "403",
+			Message: "You can only delete/edit your own comments",
+		})
+		return
+	}
+	fmt.Println("userID from token:", userID)
+	fmt.Println("authorID in comment:", comment.AuthorID)
+	fmt.Println("roleID from token:", roleID)
+	fmt.Println("commentID:", commentID)
+	if err := h.Repo.Delete(commentID); err != nil {
+		c.JSON(http.StatusInternalServerError, model.APIError{
+			Code:    "500",
+			Message: err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Comment deleted"})
+}
+
+func (h *TicketCommentHandler) UpdateComment(c *gin.Context) {
+	commentIDStr := c.Param("id")
+	commentID, err := uuid.Parse(commentIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, model.APIError{
+			Code:    "400",
+			Message: "Invalid comment id",
+		})
+		return
+	}
+	var req struct {
+		Content string `json:"content"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, model.APIError{
+			Code:    "400",
+			Message: "Validation failed",
+			Details: err.Error(),
+		})
+		return
+	}
+	userIDRaw, exists := c.Get("user_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "No user_id in token",
+		})
+		return
+	}
+	userIDStr, ok := userIDRaw.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "user_id in token is not a string",
+		})
+		return
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "Invalid user_id in token",
+		})
+		return
+	}
+
+	roleIDRaw, exists := c.Get("role_id")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "No role_id in token",
+		})
+		return
+	}
+	roleID, ok := roleIDRaw.(string)
+	if !ok {
+		c.JSON(http.StatusUnauthorized, model.APIError{
+			Code:    "401",
+			Message: "role_id in token is not a string",
+		})
+		return
+	}
+	isAdmin := roleID == "00000000-0000-0000-0000-000000000002"
+	comment, err := h.Repo.GetByID(commentID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, model.APIError{
+			Code:    "404",
+			Message: "Comment not found",
+		})
+		return
+	}
+	if comment.AuthorID != userID && !isAdmin {
+		c.JSON(http.StatusForbidden, model.APIError{
+			Code:    "403",
+			Message: "You can only edit your own comments",
+		})
+		return
+	}
+	comment.Content = req.Content
+	comment.CreatedAt = time.Now().UTC() // или отдельное поле UpdatedAt
+	if err := h.Repo.Update(comment); err != nil {
+		c.JSON(http.StatusInternalServerError, model.APIError{
+			Code:    "500",
+			Message: err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, comment)
 }
