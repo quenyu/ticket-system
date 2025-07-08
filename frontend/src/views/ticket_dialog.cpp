@@ -23,6 +23,8 @@
 #include <QHeaderView>
 #include <QStandardItemModel>
 #include <QDateTime>
+#include "models/ticket_model.h"
+#include "models/dictionary_model.h"
 
 TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QWidget *parent, Mode mode)
     : QDialog(parent), m_ticket(ticket), m_jwtToken(jwtToken), m_mode(mode) {
@@ -560,9 +562,22 @@ void TicketDialog::loadHistory() {
                             break;
                         }
                     }
-                    QString action = o.value("field_name").toString() + ": " +
-                                     o.value("old_value").toString() + " → " +
-                                     o.value("new_value").toString();
+                    QString field = o.value("field_name").toString();
+                    QString oldValue = o.value("old_value").toString();
+                    QString newValue = o.value("new_value").toString();
+
+                    if (field == "department") {
+                        oldValue = TicketItem::departmentNames.value(oldValue.toInt(), oldValue);
+                        newValue = TicketItem::departmentNames.value(newValue.toInt(), newValue);
+                    } else if (field == "status") {
+                        oldValue = TicketItem::statusLabels.value(oldValue.toInt(), oldValue);
+                        newValue = TicketItem::statusLabels.value(newValue.toInt(), newValue);
+                    } else if (field == "priority") {
+                        oldValue = TicketItem::priorityLabels.value(oldValue.toInt(), oldValue);
+                        newValue = TicketItem::priorityLabels.value(newValue.toInt(), newValue);
+                    }
+
+                    QString action = field + ": " + oldValue + " → " + newValue;
                     QList<QStandardItem*> row;
                     row << new QStandardItem(date)
                         << new QStandardItem(user)
