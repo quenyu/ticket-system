@@ -29,6 +29,89 @@
 #include <QListView>
 #include <QInputDialog>
 #include <QMenu>
+#include "models/attachment_model.h"
+#include <QFileDialog>
+#include <QDesktopServices>
+#include <QUrl>
+#include <QStyledItemDelegate>
+#include <QPainter>
+#include <QPixmap>
+#include <QBuffer>
+#include <QScreen>
+#include <QMouseEvent>
+
+class AttachmentDelegate : public QStyledItemDelegate {
+public:
+    AttachmentDelegate(const QString &ticketId, QMap<QString, QPixmap> *pixmapCache, TicketDialog *dialog, QObject *parent = nullptr)
+        : QStyledItemDelegate(parent), m_ticketId(ticketId), m_pixmapCache(pixmapCache), m_dialog(dialog) {}
+    QVariant displayRoleData(const QAbstractItemModel *model, const QModelIndex &index) const {
+        return model->data(index, Qt::DisplayRole);
+    }
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override {
+        painter->save();
+        QRect rect = option.rect;
+        if (option.state & QStyle::State_Selected) {
+            painter->fillRect(rect, option.palette.highlight());
+        }
+        QString filename = index.data(AttachmentModel::FilenameRole).toString();
+        QString attId = index.data(AttachmentModel::IdRole).toString();
+        bool isImg = false;
+        QString lower = filename.toLower();
+        if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".gif")) isImg = true;
+        int x = rect.left() + 12;
+        int thumbSize = 128;
+        m_lastThumbRect = QRect();
+        if (isImg) {
+            QPixmap pix;
+            if (m_pixmapCache && m_pixmapCache->contains(attId)) {
+                pix = m_pixmapCache->value(attId).scaled(thumbSize, thumbSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            } else {
+                if (m_dialog) m_dialog->requestAttachmentImage(attId, m_ticketId);
+                pix = QPixmap(thumbSize, thumbSize);
+                pix.fill(Qt::lightGray);
+            }
+            int y = rect.top() + (rect.height()-thumbSize)/2;
+            painter->drawPixmap(x, y, thumbSize, thumbSize, pix);
+            m_lastThumbRect = QRect(x, y, thumbSize, thumbSize);
+            x += thumbSize + 8;
+        }
+        QRect textRect(x, rect.top(), rect.width() - (x-rect.left()), rect.height());
+        painter->setPen(option.state & QStyle::State_Selected ? option.palette.highlightedText().color() : option.palette.text().color());
+        painter->drawText(textRect, Qt::AlignVCenter|Qt::AlignLeft, filename);
+        painter->restore();
+    }
+    QSize sizeHint(const QStyleOptionViewItem &option, const QModelIndex &index) const override {
+        return QSize(option.rect.width(), 136);
+    }
+    
+    bool editorEvent(QEvent *event, QAbstractItemModel *model, const QStyleOptionViewItem &option, const QModelIndex &index) override {
+        if (event->type() == QEvent::MouseButtonRelease) {
+            QMouseEvent *me = static_cast<QMouseEvent*>(event);
+            if (me->button() != Qt::LeftButton) return QStyledItemDelegate::editorEvent(event, model, option, index);
+            QString filename = index.data(AttachmentModel::FilenameRole).toString();
+            QString attId = index.data(AttachmentModel::IdRole).toString();
+            bool isImg = false;
+            QString lower = filename.toLower();
+            if (lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".png") || lower.endsWith(".gif")) isImg = true;
+            int x = option.rect.left() + 12;
+            int thumbSize = 128;
+            int y = option.rect.top() + (option.rect.height()-thumbSize)/2;
+            QRect thumbRect(x, y, thumbSize, thumbSize);
+            if (isImg && thumbRect.contains(me->pos())) {
+                if (m_pixmapCache && m_pixmapCache->contains(attId) && m_dialog) {
+                    m_dialog->showImagePreview(m_pixmapCache->value(attId));
+                    return true;
+                }
+            }
+        }
+        return QStyledItemDelegate::editorEvent(event, model, option, index);
+    }
+private:
+    QString m_ticketId;
+    QMap<QString, QPixmap> *m_pixmapCache;
+    TicketDialog *m_dialog;
+    mutable QRect m_lastThumbRect;
+};
 
 TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QWidget *parent, Mode mode)
     : QDialog(parent), m_ticket(ticket), m_jwtToken(jwtToken), m_mode(mode) {
@@ -158,7 +241,7 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
             QAction *selected = menu.exec(m_commentsListView->viewport()->mapToGlobal(pos));
             if (selected == deleteAction) {
                 if (!canDelete) {
-                    QMessageBox::information(this, "Нет прав", "Вы не можете удалить этот комментарий.");
+                    QMessageBox::information(this, "No permission", "You cannot delete this comment.");
                     return;
                 }
                 if (QMessageBox::question(this, "Delete Comment", "Are you sure you want to delete this comment?") == QMessageBox::Yes) {
@@ -179,6 +262,62 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
             }
         });
         
+        // --- ATTACHMENTS TAB ---
+        attachmentsTab = new QWidget(this);
+        QVBoxLayout *attachmentsLayout = new QVBoxLayout(attachmentsTab);
+        m_attachmentModel = new AttachmentModel(this);
+        m_attachmentsListView = new QListView(attachmentsTab);
+        m_attachmentsListView->setModel(m_attachmentModel);
+        m_attachmentsListView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+        m_attachmentsListView->setResizeMode(QListView::Adjust);
+        m_attachmentsListView->setWrapping(false);
+        attachmentsLayout->addWidget(new QLabel("Attachments:", attachmentsTab));
+        attachmentsLayout->addWidget(m_attachmentsListView);
+        m_uploadAttachmentBtn = new QPushButton("Upload file", attachmentsTab);
+        attachmentsLayout->addWidget(m_uploadAttachmentBtn);
+        connect(m_uploadAttachmentBtn, &QPushButton::clicked, this, &TicketDialog::uploadAttachment);
+        attachmentsTab->setLayout(attachmentsLayout);
+        tabWidget->addTab(attachmentsTab, "Attachments");
+        // Context menu for delete
+        m_attachmentsListView->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(m_attachmentsListView, &QListView::customContextMenuRequested, this, [this](const QPoint &pos) {
+            QModelIndex index = m_attachmentsListView->indexAt(pos);
+            QMenu menu;
+            QAction *deleteAction = menu.addAction("Delete");
+            bool canDelete = false;
+            if (index.isValid()) {
+                AttachmentItem att = m_attachmentModel->getAttachment(index.row());
+                canDelete = (m_userRole == "00000000-0000-0000-0000-000000000002" || att.uploadedBy == m_userId);
+                deleteAction->setEnabled(canDelete);
+            } else {
+                deleteAction->setEnabled(false);
+            }
+            QAction *selected = menu.exec(m_attachmentsListView->viewport()->mapToGlobal(pos));
+            if (selected == deleteAction) {
+                if (!canDelete) {
+                    QMessageBox::information(this, "No permission", "You cannot delete this attachment.");
+                    return;
+                }
+                if (QMessageBox::question(this, "Delete Attachment", "Are you sure you want to delete this attachment?") == QMessageBox::Yes) {
+                    AttachmentItem att = m_attachmentModel->getAttachment(index.row());
+                    APIClient *api = new APIClient(this);
+                    connect(api, &APIClient::attachmentDeleted, this, [this, row=index.row()](const QString &attId){
+                        m_attachmentModel->removeAttachment(row);
+                    });
+                    connect(api, &APIClient::apiError, this, [this](const QString &err){
+                        QMessageBox::warning(this, "Error", err);
+                    });
+                    api->deleteAttachment(m_jwtToken, m_ticket.id, att.id);
+                }
+            }
+        });
+        m_attachmentsListView->setItemDelegate(new AttachmentDelegate(m_ticket.id, &m_attachmentPixmaps, this, m_attachmentsListView));
+        connect(m_attachmentsListView, &QListView::clicked, this, [this](const QModelIndex &index) {
+            AttachmentItem att = m_attachmentModel->getAttachment(index.row());
+            QString url = QString("%1/tickets/%2/attachments/%3/download").arg(Config::instance().fullApiUrl()).arg(m_ticket.id).arg(att.id);
+            QDesktopServices::openUrl(QUrl(url));
+        });
+        
         mainLayout->addWidget(tabWidget);
         
         qDebug() << "Connecting signals...";
@@ -189,6 +328,7 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         
         qDebug() << "Creating network manager...";
         network = new QNetworkAccessManager(this);
+        m_attachmentImageManager = new QNetworkAccessManager(this);
         
         qDebug() << "Setting focus...";
         titleEdit->setFocus();
@@ -209,6 +349,7 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         if (mode == Edit && !ticket.id.isEmpty()) {
             loadHistory();
             loadComments();
+            loadAttachments();
         }
         
         qDebug() << "=== TicketDialog constructor SUCCESS ===";
@@ -691,6 +832,30 @@ void TicketDialog::loadComments() {
     });
 }
 
+void TicketDialog::loadAttachments() {
+    if (m_ticket.id.isEmpty()) {
+        m_attachmentModel->clearAttachments();
+        return;
+    }
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + m_ticket.id + "/attachments");
+    QNetworkRequest request(url);
+    request.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
+    QNetworkReply *reply = network->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+            if (doc.isArray()) {
+                m_attachmentModel->loadAttachments(doc.array());
+            } else {
+                qWarning() << "Expected JSON array for attachments, but got something else.";
+            }
+        } else {
+            qWarning() << "Failed to load attachments:" << reply->errorString();
+        }
+        reply->deleteLater();
+    });
+}
+
 void TicketDialog::postNewComment() {
     QString content = m_newCommentEdit->toPlainText().trimmed();
     if (content.isEmpty() || m_ticket.id.isEmpty()) {
@@ -729,4 +894,60 @@ void TicketDialog::postNewComment() {
         }
         reply->deleteLater();
     });
+} 
+
+void TicketDialog::uploadAttachment() {
+    QString filePath = QFileDialog::getOpenFileName(this, "Select a file to attach");
+    if (filePath.isEmpty()) return;
+    APIClient *api = new APIClient(this);
+    connect(api, &APIClient::attachmentUploaded, this, [this]() {
+        loadAttachments();
+        QMessageBox::information(this, "Success", "File uploaded successfully.");
+    });
+    connect(api, &APIClient::apiError, this, [this](const QString &err) {
+        QMessageBox::warning(this, "Error", err);
+    });
+    api->uploadAttachment(m_jwtToken, m_ticket.id, filePath);
+} 
+
+void TicketDialog::requestAttachmentImage(const QString &attId, const QString &ticketId) {
+    if (m_attachmentPixmaps.contains(attId)) return;
+    QString url = QString("%1/tickets/%2/attachments/%3/download").arg(Config::instance().fullApiUrl()).arg(ticketId).arg(attId);
+    QNetworkRequest req{QUrl(url)};
+    req.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
+    QNetworkReply *reply = m_attachmentImageManager->get(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, attId]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            QByteArray data = reply->readAll();
+            QPixmap pix;
+            bool ok = pix.loadFromData(data);
+            qDebug() << "Attachment image loaded for" << attId << "success:" << ok << "size:" << pix.size() << "data size:" << data.size();
+            m_attachmentPixmaps[attId] = pix;
+            onAttachmentImageLoaded(attId, pix);
+        } else {
+            qDebug() << "Failed to load image for" << attId << ":" << reply->errorString();
+        }
+        reply->deleteLater();
+    });
+}
+
+void TicketDialog::onAttachmentImageLoaded(const QString &attId, const QPixmap &pixmap) {
+    for (int row = 0; row < m_attachmentModel->rowCount(); ++row) {
+        if (m_attachmentModel->getAttachment(row).id == attId) {
+            QModelIndex idx = m_attachmentModel->index(row);
+            m_attachmentsListView->update(idx);
+            break;
+        }
+    }
+} 
+
+void TicketDialog::showImagePreview(const QPixmap &pixmap) {
+    if (!m_imagePreviewDialog) {
+        m_imagePreviewDialog = new ImagePreviewDialog(this);
+    }
+    m_imagePreviewDialog->setPixmap(pixmap);
+    m_imagePreviewDialog->resize(qApp->primaryScreen()->size());
+    m_imagePreviewDialog->show();
+    m_imagePreviewDialog->raise();
+    m_imagePreviewDialog->activateWindow();
 } 
