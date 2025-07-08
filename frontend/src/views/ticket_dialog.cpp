@@ -27,9 +27,12 @@
 #include "models/dictionary_model.h"
 #include "models/comment_model.h"
 #include <QListView>
+#include <QInputDialog>
+#include <QMenu>
 
 TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QWidget *parent, Mode mode)
     : QDialog(parent), m_ticket(ticket), m_jwtToken(jwtToken), m_mode(mode) {
+    decodeJwtToken();
     qDebug() << "=== TicketDialog constructor START ===";
     qDebug() << "Mode:" << (mode == Create ? "Create" : "Edit");
     qDebug() << "Ticket ID:" << ticket.id;
@@ -139,6 +142,42 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         commentsTab->setLayout(commentsLayout);
         tabWidget->addTab(commentsTab, "Comments");
         connect(m_postCommentBtn, &QPushButton::clicked, this, &TicketDialog::postNewComment);
+        m_commentsListView->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(m_commentsListView, &QListView::customContextMenuRequested, this, [this](const QPoint &pos) {
+            QModelIndex index = m_commentsListView->indexAt(pos);
+            QMenu menu;
+            QAction *deleteAction = menu.addAction("Delete");
+            bool canDelete = false;
+            if (index.isValid()) {
+                CommentItem comment = m_commentModel->getComment(index.row());
+                canDelete = (m_userRole == "00000000-0000-0000-0000-000000000002" || comment.authorId == m_userId);
+                deleteAction->setEnabled(canDelete);
+            } else {
+                deleteAction->setEnabled(false);
+            }
+            QAction *selected = menu.exec(m_commentsListView->viewport()->mapToGlobal(pos));
+            if (selected == deleteAction) {
+                if (!canDelete) {
+                    QMessageBox::information(this, "Нет прав", "Вы не можете удалить этот комментарий.");
+                    return;
+                }
+                if (QMessageBox::question(this, "Delete Comment", "Are you sure you want to delete this comment?") == QMessageBox::Yes) {
+                    CommentItem comment = m_commentModel->getComment(index.row());
+                    QUrl url(Config::instance().fullApiUrl() + "/comments/" + comment.id);
+                    QNetworkRequest request(url);
+                    request.setRawHeader("Authorization", "Bearer " + m_jwtToken.toUtf8());
+                    QNetworkReply *reply = network->deleteResource(request);
+                    connect(reply, &QNetworkReply::finished, this, [this, reply, row=index.row()]() {
+                        if (reply->error() == QNetworkReply::NoError) {
+                            m_commentModel->removeComment(row);
+                        } else {
+                            QMessageBox::warning(this, "Error", "Failed to delete comment: " + reply->errorString());
+                        }
+                        reply->deleteLater();
+                    });
+                }
+            }
+        });
         
         mainLayout->addWidget(tabWidget);
         
@@ -180,6 +219,20 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         qDebug() << "UNKNOWN EXCEPTION in TicketDialog constructor";
         throw;
     }
+}
+
+void TicketDialog::decodeJwtToken() {
+    QStringList parts = m_jwtToken.split('.');
+    if (parts.size() >= 2) {
+        QByteArray payload = QByteArray::fromBase64(parts[1].toUtf8(), QByteArray::Base64UrlEncoding);
+        QJsonDocument doc = QJsonDocument::fromJson(payload);
+        if (doc.isObject()) {
+            QJsonObject obj = doc.object();
+            m_userId = obj.value("user_id").toString();
+            m_userRole = obj.value("role_id").toString();
+        }
+    }
+    qDebug() << "Extracted userId =" << m_userId << ", role =" << m_userRole;
 }
 
 void TicketDialog::loadDepartments() {
@@ -648,6 +701,8 @@ void TicketDialog::postNewComment() {
     newComment.ticketCreatedAt = m_ticket.createdAt;
     newComment.content = content;
     newComment.createdAt = QDateTime::currentDateTimeUtc();
+    newComment.authorId = m_userId;
+    newComment.authorName = "";
     QUrl url(Config::instance().fullApiUrl() + "/tickets/" + m_ticket.id + "/comments");
     QNetworkRequest request(url);
     request.setRawHeader("Content-Type", "application/json");
@@ -664,6 +719,7 @@ void TicketDialog::postNewComment() {
                 newComment.id = responseObj.value("comment_id").toString();
                 newComment.createdAt = QDateTime::fromString(responseObj.value("created_at").toString(), Qt::ISODate);
                 newComment.authorName = responseObj.value("author_name").toString(newComment.authorName);
+                newComment.authorId = responseObj.value("author_id").toString(newComment.authorId);
             }
             m_commentModel->addComment(newComment);
             m_newCommentEdit->clear();

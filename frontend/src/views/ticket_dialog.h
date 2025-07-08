@@ -68,4 +68,7 @@ private:
     void loadUsers();
     void filterAssigneesByDepartment(int departmentId);
     void postNewComment();
+    void decodeJwtToken();
+    QString m_userRole;
+    QString m_userId;
 }; 
