@@ -204,7 +204,8 @@ void TicketModel::loadTickets(const QJsonArray& array) {
         t.assignee = obj.value("assignee_name").toString();
         t.assigneeId = obj.value("assignee_id").toString();
         t.creatorId = obj.value("creator_id").toString();
-        t.createdAt = QDateTime::fromString(obj.value("created_at").toString(), Qt::ISODate);
+        t.createdAtRaw = obj.value("created_at").toString();
+        t.createdAt = QDateTime::fromString(t.createdAtRaw, Qt::ISODateWithMs);
         t.updatedAt = QDateTime::fromString(obj.value("updated_at").toString(), Qt::ISODate);
         m_tickets.append(t);
     }

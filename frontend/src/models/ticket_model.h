@@ -23,6 +23,7 @@ struct TicketItem {
     QString assigneeId;
     QString creatorId;
     QDateTime createdAt;
+    QString createdAtRaw;
     QDateTime updatedAt;
 
     static QMap<int, QString> statusLabels;
