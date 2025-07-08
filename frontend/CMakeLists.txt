@@ -6,7 +6,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Gui)
 
 set(SOURCES
     src/main.cpp
@@ -48,4 +48,5 @@ target_include_directories(ticket_frontend PRIVATE
 target_link_libraries(ticket_frontend
     Qt6::Widgets
     Qt6::Network
+    Qt6::Gui
 ) 
