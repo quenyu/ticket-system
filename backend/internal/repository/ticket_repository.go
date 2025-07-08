@@ -17,10 +17,6 @@ func NewTicketRepository(db *gorm.DB) *TicketRepository {
 	return &TicketRepository{DB: db}
 }
 
-// Реализация методов интерфейса usecase.TicketRepository
-// func (r *TicketRepository) Create(ticket *domain.Ticket) error { ... }
-// ... и т.д.
-
 func (r *TicketRepository) Create(ticket *domain.Ticket) error {
 	if ticket.ID == uuid.Nil {
 		ticket.ID = uuid.New()

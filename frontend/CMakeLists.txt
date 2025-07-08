@@ -18,6 +18,7 @@ set(SOURCES
     src/models/ticket_model.cpp
     src/models/dictionary_model.cpp
     src/models/comment_model.cpp
+    src/models/attachment_model.cpp
     src/mainwindow.cpp
     src/config.cpp
 )

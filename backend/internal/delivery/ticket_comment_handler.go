@@ -110,7 +110,7 @@ func (h *TicketCommentHandler) DeleteComment(c *gin.Context) {
 		})
 		return
 	}
-	// Получаем user_id из токена
+
 	userIDRaw, exists := c.Get("user_id")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, model.APIError{
@@ -262,7 +262,7 @@ func (h *TicketCommentHandler) UpdateComment(c *gin.Context) {
 		return
 	}
 	comment.Content = req.Content
-	comment.CreatedAt = time.Now().UTC() // или отдельное поле UpdatedAt
+	comment.CreatedAt = time.Now().UTC()
 	if err := h.Repo.Update(comment); err != nil {
 		c.JSON(http.StatusInternalServerError, model.APIError{
 			Code:    "500",

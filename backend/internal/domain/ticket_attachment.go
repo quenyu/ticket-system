@@ -14,7 +14,7 @@ type TicketAttachment struct {
 	Filename        string          `gorm:"column:filename" json:"filename"`
 	Metadata        json.RawMessage `gorm:"column:metadata" json:"metadata,omitempty"`
 	FileData        []byte          `gorm:"column:file_data" json:"file_data,omitempty"`
-	FilePath        string          `gorm:"column:file_path" json:"file_path,omitempty"`
+	FilePath        *string         `gorm:"column:file_path" json:"file_path,omitempty"`
 	UploadedBy      uuid.UUID       `gorm:"column:uploaded_by" json:"uploaded_by"`
 	UploadedAt      time.Time       `gorm:"column:uploaded_at" json:"uploaded_at"`
 }

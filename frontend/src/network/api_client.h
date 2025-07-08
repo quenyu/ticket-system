@@ -17,6 +17,8 @@ public:
     void createTicket(const QString &token, const QJsonObject &ticketData);
     void updateTicket(const QString &token, const QString &ticketId, const QJsonObject &ticketData);
     void loadHistory(const QString &token, const QString &ticketId);
+    void deleteAttachment(const QString &token, const QString &ticketId, const QString &attachmentId);
+    void uploadAttachment(const QString &token, const QString &ticketId, const QString &filePath);
 signals:
     void loginSuccess(const QString &token);
     void loginFailed(const QString &error);
@@ -30,6 +32,8 @@ signals:
     void ticketCreated(const QByteArray &data);
     void apiError(const QString &error);
     void historyLoaded(const QByteArray &data);
+    void attachmentDeleted(const QString &attachmentId);
+    void attachmentUploaded();
 private:
     QNetworkAccessManager manager;
 }; 

@@ -4,6 +4,9 @@
 #include <QJsonObject>
 #include <QNetworkRequest>
 #include <QDebug>
+#include <QHttpMultiPart>
+#include <QFileInfo>
+#include <QFile>
 
 APIClient::APIClient(QObject *parent) : QObject(parent) {}
 
@@ -172,6 +175,51 @@ void APIClient::loadHistory(const QString &token, const QString &ticketId) {
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() == QNetworkReply::NoError) {
             emit historyLoaded(reply->readAll());
+        } else {
+            emit apiError(reply->errorString());
+        }
+        reply->deleteLater();
+    });
+}
+
+void APIClient::deleteAttachment(const QString &token, const QString &ticketId, const QString &attachmentId) {
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + ticketId + "/attachments/" + attachmentId);
+    QNetworkRequest req(url);
+    req.setRawHeader("Authorization", "Bearer " + token.toUtf8());
+    QNetworkReply *reply = manager.deleteResource(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, attachmentId]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            emit attachmentDeleted(attachmentId);
+        } else {
+            emit apiError(reply->errorString());
+        }
+        reply->deleteLater();
+    });
+}
+
+void APIClient::uploadAttachment(const QString &token, const QString &ticketId, const QString &filePath) {
+    QUrl url(Config::instance().fullApiUrl() + "/tickets/" + ticketId + "/attachments");
+    QNetworkRequest req(url);
+    req.setRawHeader("Authorization", "Bearer " + token.toUtf8());
+    QHttpMultiPart *multiPart = new QHttpMultiPart(QHttpMultiPart::FormDataType);
+    QFileInfo fileInfo(filePath);
+    QFile *file = new QFile(filePath);
+    if (!file->open(QIODevice::ReadOnly)) {
+        emit apiError("Failed to open file for reading");
+        file->deleteLater();
+        multiPart->deleteLater();
+        return;
+    }
+    QHttpPart filePart;
+    filePart.setHeader(QNetworkRequest::ContentDispositionHeader, QVariant(QString("form-data; name=\"file\"; filename=\"%1\"").arg(fileInfo.fileName())));
+    filePart.setBodyDevice(file);
+    file->setParent(multiPart);
+    multiPart->append(filePart);
+    QNetworkReply *reply = manager.post(req, multiPart);
+    multiPart->setParent(reply);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            emit attachmentUploaded();
         } else {
             emit apiError(reply->errorString());
         }
