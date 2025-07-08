@@ -213,6 +213,30 @@ src/mainwindow.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/mainwindow.cpp.s
 .PHONY : src/mainwindow.cpp.s
 
+src/models/attachment_model.obj: src/models/attachment_model.cpp.obj
+.PHONY : src/models/attachment_model.obj
+
+# target to build an object file
+src/models/attachment_model.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/attachment_model.cpp.obj
+.PHONY : src/models/attachment_model.cpp.obj
+
+src/models/attachment_model.i: src/models/attachment_model.cpp.i
+.PHONY : src/models/attachment_model.i
+
+# target to preprocess a source file
+src/models/attachment_model.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/attachment_model.cpp.i
+.PHONY : src/models/attachment_model.cpp.i
+
+src/models/attachment_model.s: src/models/attachment_model.cpp.s
+.PHONY : src/models/attachment_model.s
+
+# target to generate assembly for a file
+src/models/attachment_model.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\ticket_frontend.dir\build.make CMakeFiles/ticket_frontend.dir/src/models/attachment_model.cpp.s
+.PHONY : src/models/attachment_model.cpp.s
+
 src/models/comment_model.obj: src/models/comment_model.cpp.obj
 .PHONY : src/models/comment_model.obj
 
@@ -448,6 +472,9 @@ help:
 	@echo ... src/mainwindow.obj
 	@echo ... src/mainwindow.i
 	@echo ... src/mainwindow.s
+	@echo ... src/models/attachment_model.obj
+	@echo ... src/models/attachment_model.i
+	@echo ... src/models/attachment_model.s
 	@echo ... src/models/comment_model.obj
 	@echo ... src/models/comment_model.i
 	@echo ... src/models/comment_model.s
