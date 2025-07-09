@@ -2,7 +2,7 @@ package repository
 
 import (
 	"ticket-system/backend/internal/domain"
-	"ticket-system/backend/internal/usecase"
+	"ticket-system/backend/internal/model"
 	"time"
 
 	"github.com/google/uuid"
@@ -51,7 +51,7 @@ func (r *TicketRepository) Delete(id uuid.UUID) error {
 		Update("deleted_at", time.Now().UTC()).Error
 }
 
-func (r *TicketRepository) Search(filter usecase.TicketFilter) ([]*domain.Ticket, error) {
+func (r *TicketRepository) Search(filter model.TicketFilter) ([]*domain.Ticket, error) {
 	var tickets []*domain.Ticket
 	db := r.DB.Model(&domain.Ticket{}).Where("deleted_at IS NULL")
 	if filter.StatusID != nil {
