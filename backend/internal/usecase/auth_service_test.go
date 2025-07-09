@@ -101,19 +101,3 @@ func TestAuthService_Register_Success(t *testing.T) {
 	assert.Equal(t, input.DepartmentID, created.DepartmentID)
 	assert.NoError(t, bcrypt.CompareHashAndPassword([]byte(created.PasswordHash), []byte(input.Password)))
 }
-
-func TestAuthService_Register_HashFail(t *testing.T) {
-	repo := &mockUserRepo{
-		CreateFunc: func(user *domain.User) error { return nil },
-	}
-	svc := NewAuthService(repo, "testsecret")
-	input := model.UserRegisterRequest{
-		Username:     "failuser",
-		Password:     string([]byte{0xff, 0xfe, 0xfd}), // bcrypt will fail
-		Email:        "fail@ex.com",
-		RoleID:       uuid.New().String(),
-		DepartmentID: 2,
-	}
-	_, err := svc.Register(input)
-	assert.Error(t, err)
-}

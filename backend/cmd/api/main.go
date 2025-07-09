@@ -5,15 +5,30 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"ticket-system/backend/docs"
 	"ticket-system/backend/internal/config"
 	"ticket-system/backend/internal/delivery"
 	"ticket-system/backend/internal/middleware"
 	"ticket-system/backend/internal/repository"
 	"ticket-system/backend/internal/repository/adapters"
 	"ticket-system/backend/internal/usecase"
+
+	_ "ticket-system/backend/docs"
+
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
+	importDocs := func() {
+		docs.SwaggerInfo.Title = "Ticket System API"
+		docs.SwaggerInfo.Description = "API для тикет-системы."
+		docs.SwaggerInfo.Version = "1.0"
+		docs.SwaggerInfo.Host = "localhost:8080"
+		docs.SwaggerInfo.BasePath = "/api/v1"
+	}
+	importDocs()
+
 	cfg := config.LoadConfig()
 
 	db, err := repository.NewDB(cfg.DBUrl)
@@ -67,6 +82,8 @@ func main() {
 
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})

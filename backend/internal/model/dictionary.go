@@ -17,3 +17,12 @@ type TicketPriorityDTO struct {
 	Label string `json:"label"`
 	Level int16  `json:"level"`
 }
+
+type TicketFilter struct {
+	StatusID     *int16
+	AssigneeID   *string
+	DepartmentID *int16
+	Q            string
+	Limit        int
+	Offset       int
+}

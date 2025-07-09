@@ -115,11 +115,17 @@ func (h *TicketHandler) GetTickets(c *gin.Context) {
 		}
 	}
 	filter.Q = c.Query("q")
-	if v := c.Query("limit"); v != "" {
-		fmt.Sscan(v, &filter.Limit)
+	if v, ok := c.GetQuery("limit"); ok {
+		if _, err := fmt.Sscan(v, &filter.Limit); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid limit parameter"})
+			return
+		}
 	}
-	if v := c.Query("offset"); v != "" {
-		fmt.Sscan(v, &filter.Offset)
+	if v, ok := c.GetQuery("offset"); ok {
+		if _, err := fmt.Sscan(v, &filter.Offset); err != nil {
+			c.JSON(400, gin.H{"error": "Invalid offset parameter"})
+			return
+		}
 	}
 
 	if filter.AssigneeID != nil {
