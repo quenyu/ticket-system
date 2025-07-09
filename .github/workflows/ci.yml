@@ -21,7 +21,7 @@ jobs:
       - name: Run golangci-lint
         run: |
           cd backend
-          golangci-lint run ./...
+          golangci-lint run --timeout 5m ./...
 
   lint-cpp:
     runs-on: ubuntu-latest
