@@ -95,10 +95,14 @@ func (m *mockDepartmentRepoTH) List() ([]interface {
 	}, nil
 }
 
+type mockTicketHistoryRepo struct{}
+
+func (m *mockTicketHistoryRepo) Create(history *domain.TicketHistory) error { return nil }
+
 func setupTestTicketHandler(t *testing.T) *TicketHandler {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&domain.Ticket{}, &domain.User{}, &domain.TicketStatus{}, &domain.TicketPriority{}, &domain.Department{}))
+	require.NoError(t, db.AutoMigrate(&domain.Ticket{}, &domain.User{}, &domain.TicketStatus{}, &domain.TicketPriority{}, &domain.Department{}, &domain.TicketHistory{}))
 
 	user := &domain.User{ID: uuid.New(), Username: "alice", DepartmentID: 1}
 	require.NoError(t, db.Create(user).Error)
@@ -120,8 +124,18 @@ func setupTestTicketHandler(t *testing.T) *TicketHandler {
 	prioRepo := &mockPriorityRepoTH{}
 	deptRepo := &mockDepartmentRepoTH{}
 	userRepo := repository.NewUserRepository(db)
+	historyRepo := repository.NewTicketHistoryRepository(db)
 
-	return NewTicketHandler(ticketRepo, statusRepo, prioRepo, deptRepo, userRepo, nil)
+	ticketHandler := NewTicketHandler(
+		ticketRepo,
+		statusRepo,
+		prioRepo,
+		deptRepo,
+		userRepo,
+		historyRepo,
+	)
+
+	return ticketHandler
 }
 
 func TestTicketHandler_GetTickets_OK(t *testing.T) {
