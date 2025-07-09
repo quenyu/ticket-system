@@ -19,27 +19,18 @@ import (
 
 type TicketHandler struct {
 	TicketRepo     usecase.TicketRepository
-	StatusRepo     usecase.TicketStatusRepository
-	PriorityRepo   usecase.TicketPriorityRepository
-	DepartmentRepo usecase.DepartmentRepository
+	StatusRepo     usecase.TicketStatusRepo
+	PriorityRepo   usecase.TicketPriorityRepo
+	DepartmentRepo usecase.DepartmentRepo
 	UserRepo       *repository.UserRepository
 	HistoryRepo    *repository.TicketHistoryRepository
 }
 
-type TicketFilter struct {
-	StatusID     *int16
-	AssigneeID   *string
-	DepartmentID *int16
-	Q            string
-	Limit        int
-	Offset       int
-}
-
 func NewTicketHandler(
 	repo usecase.TicketRepository,
-	statusRepo usecase.TicketStatusRepository,
-	priorityRepo usecase.TicketPriorityRepository,
-	departmentRepo usecase.DepartmentRepository,
+	statusRepo usecase.TicketStatusRepo,
+	priorityRepo usecase.TicketPriorityRepo,
+	departmentRepo usecase.DepartmentRepo,
 	userRepo *repository.UserRepository,
 	historyRepo *repository.TicketHistoryRepository,
 ) *TicketHandler {
@@ -107,7 +98,7 @@ func (h *TicketHandler) validateTicket(ticket *domain.Ticket) *model.APIError {
 }
 
 func (h *TicketHandler) GetTickets(c *gin.Context) {
-	var filter usecase.TicketFilter
+	var filter model.TicketFilter
 	if v := c.Query("status_id"); v != "" {
 		var id int16
 		if _, err := fmt.Sscan(v, &id); err == nil {
@@ -182,15 +173,15 @@ func (h *TicketHandler) GetTickets(c *gin.Context) {
 
 	statusMap := make(map[int16]string)
 	for _, s := range statuses {
-		statusMap[s.ID] = s.Label
+		statusMap[s.ID()] = s.Label()
 	}
 	priorityMap := make(map[int16]string)
 	for _, p := range priorities {
-		priorityMap[p.ID] = p.Label
+		priorityMap[p.ID()] = p.Label()
 	}
 	departmentMap := make(map[int16]string)
 	for _, d := range departments {
-		departmentMap[d.ID] = d.Name
+		departmentMap[d.DepartmentID()] = d.DepartmentName()
 	}
 	userMap := make(map[string]string)
 	for _, u := range users {
