@@ -15,12 +15,3 @@ type APIErrorDetail struct {
 type LegacyAPIError struct {
 	Error APIErrorDetail `json:"error"`
 }
-
-type TicketFilter struct {
-	StatusID     *int16
-	AssigneeID   *string
-	DepartmentID *int16
-	Q            string
-	Limit        int
-	Offset       int
-}
