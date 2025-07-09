@@ -1,6 +1,6 @@
 # Ticket System
 
-Система управления тикетами с backend на Go и frontend на Qt/C++
+Система управления тикетами с backend на Go и frontend на Qt/C++/
 
 ---
 
