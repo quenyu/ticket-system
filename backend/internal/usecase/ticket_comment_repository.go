@@ -11,5 +11,4 @@ type TicketCommentRepository interface {
 	GetByID(commentID uuid.UUID) (*domain.TicketComment, error)
 	Create(comment *domain.TicketComment) error
 	Delete(commentID uuid.UUID) error
-	Update(comment *domain.TicketComment) error
 }
