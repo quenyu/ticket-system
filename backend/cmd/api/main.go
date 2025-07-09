@@ -9,6 +9,7 @@ import (
 	"ticket-system/backend/internal/delivery"
 	"ticket-system/backend/internal/middleware"
 	"ticket-system/backend/internal/repository"
+	"ticket-system/backend/internal/repository/adapters"
 	"ticket-system/backend/internal/usecase"
 )
 
@@ -34,9 +35,9 @@ func main() {
 
 	userHandler := delivery.NewUserHandler(userRepo)
 
-	depRepo := repository.NewDepartmentRepository(db)
-	statRepo := repository.NewTicketStatusRepository(db)
-	prioRepo := repository.NewTicketPriorityRepository(db)
+	statRepo := adapters.NewTicketStatusAdapter(repository.NewTicketStatusRepository(db))
+	prioRepo := adapters.NewTicketPriorityAdapter(repository.NewTicketPriorityRepository(db))
+	depRepo := adapters.NewDepartmentAdapter(repository.NewDepartmentRepository(db))
 	depService := usecase.NewDepartmentService(depRepo)
 	statService := usecase.NewTicketStatusService(statRepo)
 	prioService := usecase.NewTicketPriorityService(prioRepo)
@@ -93,7 +94,6 @@ func main() {
 	protected.GET("/tickets/:id/comments", commentHandler.GetComments)
 	protected.POST("/tickets/:id/comments", commentHandler.AddComment)
 	protected.DELETE("/comments/:id", commentHandler.DeleteComment)
-	protected.PATCH("/comments/:id", commentHandler.UpdateComment)
 	// Ticket attachments
 	protected.GET("/tickets/:id/attachments", attachmentHandler.GetAttachments)
 	protected.POST("/tickets/:id/attachments", attachmentHandler.AddAttachment)
