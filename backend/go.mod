@@ -2,8 +2,6 @@ module ticket-system/backend
 
 go 1.23
 
-toolchain go1.23.11
-
 require (
 	github.com/gin-gonic/gin v1.9.1
 	github.com/golang-jwt/jwt/v4 v4.5.2
