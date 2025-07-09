@@ -4,13 +4,6 @@ import (
 	"ticket-system/backend/internal/model"
 )
 
-type DepartmentRepo interface {
-	List() ([]interface {
-		DepartmentID() int16
-		DepartmentName() string
-	}, error)
-}
-
 type TicketStatusRepo interface {
 	List() ([]interface {
 		ID() int16
@@ -25,6 +18,13 @@ type TicketPriorityRepo interface {
 		Code() string
 		Label() string
 		Level() int16
+	}, error)
+}
+
+type DepartmentRepo interface {
+	List() ([]interface {
+		DepartmentID() int16
+		DepartmentName() string
 	}, error)
 }
 
