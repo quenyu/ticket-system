@@ -95,10 +95,6 @@ func (m *mockDepartmentRepoTH) List() ([]interface {
 	}, nil
 }
 
-type mockTicketHistoryRepo struct{}
-
-func (m *mockTicketHistoryRepo) Create(history *domain.TicketHistory) error { return nil }
-
 func setupTestTicketHandler(t *testing.T) *TicketHandler {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
