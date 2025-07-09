@@ -4,11 +4,35 @@ import (
 	"ticket-system/backend/internal/model"
 )
 
-type DepartmentService struct {
-	Repo DepartmentRepository
+type DepartmentRepo interface {
+	List() ([]interface {
+		DepartmentID() int16
+		DepartmentName() string
+	}, error)
 }
 
-func NewDepartmentService(repo DepartmentRepository) *DepartmentService {
+type TicketStatusRepo interface {
+	List() ([]interface {
+		ID() int16
+		Code() string
+		Label() string
+	}, error)
+}
+
+type TicketPriorityRepo interface {
+	List() ([]interface {
+		ID() int16
+		Code() string
+		Label() string
+		Level() int16
+	}, error)
+}
+
+type DepartmentService struct {
+	Repo DepartmentRepo
+}
+
+func NewDepartmentService(repo DepartmentRepo) *DepartmentService {
 	return &DepartmentService{Repo: repo}
 }
 
@@ -19,16 +43,16 @@ func (s *DepartmentService) List() ([]model.DepartmentDTO, error) {
 	}
 	dtos := make([]model.DepartmentDTO, 0, len(items))
 	for _, d := range items {
-		dtos = append(dtos, model.DepartmentDTO{ID: d.ID, Name: d.Name})
+		dtos = append(dtos, model.DepartmentDTO{ID: d.DepartmentID(), Name: d.DepartmentName()})
 	}
 	return dtos, nil
 }
 
 type TicketStatusService struct {
-	Repo TicketStatusRepository
+	Repo TicketStatusRepo
 }
 
-func NewTicketStatusService(repo TicketStatusRepository) *TicketStatusService {
+func NewTicketStatusService(repo TicketStatusRepo) *TicketStatusService {
 	return &TicketStatusService{Repo: repo}
 }
 
@@ -39,16 +63,16 @@ func (s *TicketStatusService) List() ([]model.TicketStatusDTO, error) {
 	}
 	dtos := make([]model.TicketStatusDTO, 0, len(items))
 	for _, d := range items {
-		dtos = append(dtos, model.TicketStatusDTO{ID: d.ID, Code: d.Code, Label: d.Label})
+		dtos = append(dtos, model.TicketStatusDTO{ID: d.ID(), Code: d.Code(), Label: d.Label()})
 	}
 	return dtos, nil
 }
 
 type TicketPriorityService struct {
-	Repo TicketPriorityRepository
+	Repo TicketPriorityRepo
 }
 
-func NewTicketPriorityService(repo TicketPriorityRepository) *TicketPriorityService {
+func NewTicketPriorityService(repo TicketPriorityRepo) *TicketPriorityService {
 	return &TicketPriorityService{Repo: repo}
 }
 
@@ -59,7 +83,7 @@ func (s *TicketPriorityService) List() ([]model.TicketPriorityDTO, error) {
 	}
 	dtos := make([]model.TicketPriorityDTO, 0, len(items))
 	for _, d := range items {
-		dtos = append(dtos, model.TicketPriorityDTO{ID: d.ID, Code: d.Code, Label: d.Label, Level: d.Level})
+		dtos = append(dtos, model.TicketPriorityDTO{ID: d.ID(), Code: d.Code(), Label: d.Label(), Level: d.Level()})
 	}
 	return dtos, nil
 }
