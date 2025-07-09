@@ -14,10 +14,20 @@ func NewDepartmentRepository(db *gorm.DB) *DepartmentRepository {
 	return &DepartmentRepository{DB: db}
 }
 
-func (r *DepartmentRepository) List() ([]*domain.Department, error) {
+func (r *DepartmentRepository) List() ([]interface {
+	DepartmentID() int16
+	DepartmentName() string
+}, error) {
 	var departments []*domain.Department
 	if err := r.DB.Find(&departments).Error; err != nil {
 		return nil, err
 	}
-	return departments, nil
+	res := make([]interface {
+		DepartmentID() int16
+		DepartmentName() string
+	}, len(departments))
+	for i, d := range departments {
+		res[i] = d
+	}
+	return res, nil
 }

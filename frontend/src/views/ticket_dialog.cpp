@@ -312,11 +312,11 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
             }
         });
         m_attachmentsListView->setItemDelegate(new AttachmentDelegate(m_ticket.id, &m_attachmentPixmaps, this, m_attachmentsListView));
-        connect(m_attachmentsListView, &QListView::clicked, this, [this](const QModelIndex &index) {
-            AttachmentItem att = m_attachmentModel->getAttachment(index.row());
-            QString url = QString("%1/tickets/%2/attachments/%3/download").arg(Config::instance().fullApiUrl()).arg(m_ticket.id).arg(att.id);
-            QDesktopServices::openUrl(QUrl(url));
-        });
+        // connect(m_attachmentsListView, &QListView::clicked, this, [this](const QModelIndex &index) {
+        //     AttachmentItem att = m_attachmentModel->getAttachment(index.row());
+        //     QString url = QString("%1/tickets/%2/attachments/%3/download").arg(Config::instance().fullApiUrl()).arg(m_ticket.id).arg(att.id);
+        //     QDesktopServices::openUrl(QUrl(url));
+        // });
         
         mainLayout->addWidget(tabWidget);
         
