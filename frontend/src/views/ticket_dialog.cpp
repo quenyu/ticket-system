@@ -312,11 +312,6 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
             }
         });
         m_attachmentsListView->setItemDelegate(new AttachmentDelegate(m_ticket.id, &m_attachmentPixmaps, this, m_attachmentsListView));
-        // connect(m_attachmentsListView, &QListView::clicked, this, [this](const QModelIndex &index) {
-        //     AttachmentItem att = m_attachmentModel->getAttachment(index.row());
-        //     QString url = QString("%1/tickets/%2/attachments/%3/download").arg(Config::instance().fullApiUrl()).arg(m_ticket.id).arg(att.id);
-        //     QDesktopServices::openUrl(QUrl(url));
-        // });
         
         mainLayout->addWidget(tabWidget);
         
@@ -333,11 +328,8 @@ TicketDialog::TicketDialog(const TicketItem &ticket, const QString &jwtToken, QW
         qDebug() << "Setting focus...";
         titleEdit->setFocus();
         
-        // Deferred loading of departments
         QTimer::singleShot(200, this, &TicketDialog::loadDepartments);
-        // Deferred loading of statuses
         QTimer::singleShot(150, this, [this]{ loadStatuses(); });
-        // Deferred loading of priorities
         QTimer::singleShot(180, this, [this]{ loadPriorities(); });
         
         connect(departmentCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this]{
@@ -636,7 +628,6 @@ void TicketDialog::loadUsers() {
             }
             if (users.isEmpty())
                 assigneeCombo->addItem("No users available", "");
-            // Show all users, no filtering
             for (const auto &user : users) {
                 assigneeCombo->addItem(user.username, user.userId);
             }
@@ -682,7 +673,6 @@ void TicketDialog::filterAssigneesByDepartment(int departmentId) {
 void TicketDialog::onSaveClicked() {
     qDebug() << "=== onSaveClicked() START ===";
     
-    // Validation
     if (titleEdit->text().trimmed().isEmpty()) {
         QMessageBox::warning(this, "Error", "Title cannot be empty");
         titleEdit->setFocus();
@@ -713,7 +703,6 @@ void TicketDialog::onSaveClicked() {
     qDebug() << "Status ID:" << statusId;
     qDebug() << "Priority ID:" << priorityId;
     
-    // Form JSON
     QJsonObject obj;
     obj["title"] = titleEdit->text().trimmed();
     obj["description"] = descEdit->toPlainText().trimmed();
@@ -724,7 +713,6 @@ void TicketDialog::onSaveClicked() {
     
     qDebug() << "JSON object created:" << QJsonDocument(obj).toJson();
     
-    // Use APIClient to create ticket
     APIClient *api = new APIClient(this);
     connect(api, &APIClient::ticketCreated, this, [this](const QByteArray &data){
         emit ticketSaved();

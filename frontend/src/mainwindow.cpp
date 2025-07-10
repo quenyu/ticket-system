@@ -30,10 +30,8 @@
 #include <QVBoxLayout>
 #include <QWidget>
 
-// Global singletons for simplicity in this example
 QNetworkAccessManager *networkManager = nullptr;
 
-// Role for storing custom data in filter items
 const int FilterTypeRole = Qt::UserRole + 1;
 const int FilterValueRole = Qt::UserRole + 2;
 
@@ -41,7 +39,6 @@ const int FilterValueRole = Qt::UserRole + 2;
 MainWindow::MainWindow(const QString &jwt, QWidget *parent)
     : QMainWindow(parent), jwtToken(jwt)
 {
-    // --- Extract user ID from JWT ---
     QStringList parts = jwtToken.split('.');
     if (parts.size() >= 2) {
         QByteArray payload = QByteArray::fromBase64(parts[1].toUtf8(), QByteArray::Base64UrlEncoding);
@@ -62,7 +59,6 @@ MainWindow::MainWindow(const QString &jwt, QWidget *parent)
 void MainWindow::setupUi() {
     setWindowTitle("Ticket System");
     
-    // --- Restore Window Geometry ---
     QSettings settings("MyCompany", "TicketSystem");
     if (settings.contains("geometry")) {
         restoreGeometry(settings.value("geometry").toByteArray());
@@ -214,9 +210,8 @@ void MainWindow::loadDictionaries() {
     });
 }
 
-// ✨ NEW: Populates the department list in the filter view
 void MainWindow::populateDepartments(const QJsonArray &departments) {
-    QStandardItem *departmentsItem = m_filterModel->item(2); // The "Departments" header
+    QStandardItem *departmentsItem = m_filterModel->item(2);
     if (!departmentsItem) return;
 
     for (const QJsonValue &v : departments) {
@@ -233,16 +228,14 @@ void MainWindow::populateDepartments(const QJsonArray &departments) {
     }
 }
 
-// ✨ NEW: Called after each dictionary loads to check if all are done
 void MainWindow::onInitialDataLoaded() {
     m_dictionariesToLoad--;
     if (m_dictionariesToLoad == 0) {
         m_statusBar->showMessage("Ready");
-        loadTickets(); // Initial ticket load
+        loadTickets();
     }
 }
 
-// ✨ REFACTORED: Central method to load tickets based on current filters
 void MainWindow::loadTickets() {
     if (userId.isEmpty()) {
         QMessageBox::warning(this, "Error", "User ID is not available. Please re-login.");

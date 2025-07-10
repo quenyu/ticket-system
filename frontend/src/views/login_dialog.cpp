@@ -83,7 +83,6 @@ LoginDialog::LoginDialog(QWidget *parent) : QDialog(parent) {
     networkManager = new QNetworkAccessManager(this);
     connect(loginButton, &QPushButton::clicked, this, &LoginDialog::onLoginClicked);
     connect(registerButton, &QPushButton::clicked, this, &LoginDialog::onRegisterClicked);
-    // Enter key submits login
     connect(usernameEdit, &QLineEdit::returnPressed, this, &LoginDialog::onLoginClicked);
     connect(passwordEdit, &QLineEdit::returnPressed, this, &LoginDialog::onLoginClicked);
     usernameEdit->setFocus();

@@ -39,7 +39,7 @@ RegisterDialog::RegisterDialog(QWidget *parent)
 }
 
 void RegisterDialog::loadDepartments() {
-    apiClient->getDepartments(""); // No token needed for public dictionaries
+    apiClient->getDepartments("");
 }
 
 void RegisterDialog::loadRoles() {

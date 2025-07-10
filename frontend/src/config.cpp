@@ -9,26 +9,18 @@ Config& Config::instance() {
 }
 
 Config::Config() {
-    // Load settings from environment variables or config file
-    // First, try environment variable
-    // Then, try config file
-    // Remove trailing slash if present
-    // Save to config file
     m_apiVersion = "v1";
     
-    // First, try environment variable
     QString envUrl = qEnvironmentVariable("API_BASE_URL");
     if (!envUrl.isEmpty()) {
         m_apiBaseUrl = envUrl;
         qDebug() << "Using API URL from environment:" << m_apiBaseUrl;
     } else {
-        // Then try config file
         QSettings settings(QCoreApplication::applicationDirPath() + "/config.ini", QSettings::IniFormat);
         m_apiBaseUrl = settings.value("api/base_url", "http://localhost:8080").toString();
         qDebug() << "Using API URL from config file:" << m_apiBaseUrl;
     }
     
-    // Remove trailing slash if present
     if (m_apiBaseUrl.endsWith('/')) {
         m_apiBaseUrl.chop(1);
     }
@@ -52,7 +44,6 @@ void Config::setApiBaseUrl(const QString& url) {
         m_apiBaseUrl.chop(1);
     }
     
-    // Save to config file
     QSettings settings(QCoreApplication::applicationDirPath() + "/config.ini", QSettings::IniFormat);
     settings.setValue("api/base_url", m_apiBaseUrl);
     settings.sync();
